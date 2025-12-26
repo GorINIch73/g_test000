@@ -1,0 +1,30 @@
+#pragma once
+
+#include "BaseView.h"
+#include <vector>
+#include "../Payment.h"
+#include "../Counterparty.h"
+#include "../Kosgu.h"
+
+class PaymentsView : public BaseView {
+public:
+    PaymentsView();
+    void Render() override;
+    void SetDatabaseManager(DatabaseManager* dbManager) override;
+    void SetPdfReporter(PdfReporter* pdfReporter) override;
+
+private:
+    void RefreshData();
+    void RefreshDropdownData();
+
+    DatabaseManager* dbManager;
+    PdfReporter* pdfReporter;
+
+    std::vector<Payment> payments;
+    Payment selectedPayment;
+    int selectedPaymentIndex;
+    bool isAdding;
+
+    std::vector<Counterparty> counterpartiesForDropdown;
+    std::vector<Kosgu> kosguForDropdown;
+};

@@ -109,19 +109,19 @@ int main(int, char**) {
             }
             if (ImGui::BeginMenu("Справочники")) {
                 if (ImGui::MenuItem("КОСГУ")) {
-                    uiManager.ShowKosguWindow = true;
+                    uiManager.kosguView.IsVisible = true;
                 }
                 if (ImGui::MenuItem("Банк")) {
-                    uiManager.ShowPaymentsWindow = true;
+                    uiManager.paymentsView.IsVisible = true;
                 }
                 if (ImGui::MenuItem("Контрагенты")) {
-                    uiManager.ShowCounterpartiesWindow = true;
+                    uiManager.counterpartiesView.IsVisible = true;
                 }
                 if (ImGui::MenuItem("Договоры")) {
-                    uiManager.ShowContractsWindow = true;
+                    uiManager.contractsView.IsVisible = true;
                 }
                 if (ImGui::MenuItem("Накладные")) {
-                    uiManager.ShowInvoicesWindow = true;
+                    uiManager.invoicesView.IsVisible = true;
                 }
                 ImGui::EndMenu();
             }
@@ -133,7 +133,7 @@ int main(int, char**) {
             }
             if (ImGui::BeginMenu("Отчеты")) {
                 if (ImGui::MenuItem("SQL Запрос")) {
-                    uiManager.ShowSqlQueryWindow = true;
+                    uiManager.sqlQueryView.IsVisible = true;
                 }
                 if (ImGui::MenuItem("Экспорт в PDF")) {
                     ImGuiFileDialog::Instance()->OpenDialog("SavePdfFileDlgKey", "Сохранить отчет в PDF", ".pdf");

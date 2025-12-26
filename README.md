@@ -24,6 +24,6 @@ From the `build` directory: `./FinancialAudit`
 *   PDF Export for Payments, KOSGU, SQL Query - **Completed**
 *   Counterparties CRUD UI (including robust import logic) - **Completed**
 *   TSV Import (parsing Contracts and Invoices from description) - **Completed**
-*   Contracts CRUD UI - **In Progress**
-*   Invoices CRUD UI - **Pending**
-*   Refactor Payments Form with dropdowns - **Pending**
+*   Contracts CRUD UI - **Completed**
+*   Invoices CRUD UI - **Completed**
+*   Refactor Payments Form with dropdowns - **Completed**

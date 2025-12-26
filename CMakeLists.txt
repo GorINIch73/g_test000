@@ -56,6 +56,12 @@ set(APP_SOURCES
     src/ImportManager.cpp
     src/PdfReporter.cpp
     src/pdfgen.c
+    src/views/PaymentsView.cpp
+    src/views/KosguView.cpp
+    src/views/CounterpartiesView.cpp
+    src/views/ContractsView.cpp
+    src/views/InvoicesView.cpp
+    src/views/SqlQueryView.cpp
 )
 
 set_source_files_properties(src/pdfgen.c PROPERTIES LANGUAGE C)
@@ -67,6 +73,7 @@ add_executable(${PROJECT_NAME} ${APP_SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE
     src
+    src/views
     ${imgui_SOURCE_DIR}
     ${imgui_SOURCE_DIR}/backends
 )
