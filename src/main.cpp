@@ -10,6 +10,7 @@
 #include "ImGuiFileDialog.h"
 #include "ImportManager.h"
 #include "PdfReporter.h"
+#include "IconsFontAwesome6.h"
 
 // Функция обратного вызова для ошибок GLFW
 static void glfw_error_callback(int error, const char* description) {
@@ -62,8 +63,14 @@ int main(int, char**) {
     // Загрузка шрифта с поддержкой кириллицы (Roboto)
     ImFontConfig font_cfg;
     font_cfg.FontDataOwnedByAtlas = false;
-    ImFont* font = io.Fonts->AddFontFromFileTTF("../data/Roboto-Regular.ttf", 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
-    IM_ASSERT(font != NULL);
+    io.Fonts->AddFontFromFileTTF("../data/Roboto-Regular.ttf", 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
+    
+    // Объединение с иконочным шрифтом
+    ImFontConfig config;
+    config.MergeMode = true;
+    config.PixelSnapH = true;
+    static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
+    io.Fonts->AddFontFromFileTTF("../data/fa-solid-900.otf", 16.0f, &config, icon_ranges);
 
     // Инициализация бэкендов для GLFW и OpenGL
     ImGui_ImplGlfw_InitForOpenGL(window, true);
@@ -94,14 +101,14 @@ int main(int, char**) {
 
         // --- Рендеринг главного меню ---
         if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("Файл")) {
-                if (ImGui::MenuItem("Создать новую базу")) {
+            if (ImGui::BeginMenu(ICON_FA_FILE " Файл")) {
+                if (ImGui::MenuItem(ICON_FA_FILE_CIRCLE_PLUS " Создать новую базу")) {
                     ImGuiFileDialog::Instance()->OpenDialog("ChooseDbFileDlgKey", "Выберите файл для новой базы", ".db");
                 }
-                if (ImGui::MenuItem("Открыть фай базы")) {
+                if (ImGui::MenuItem(ICON_FA_FOLDER_OPEN " Открыть фай базы")) {
                     ImGuiFileDialog::Instance()->OpenDialog("OpenDbFileDlgKey", "Выберите файл базы данных", ".db");
                 }
-                if (ImGui::BeginMenu("Недавние файлы")) {
+                if (ImGui::BeginMenu(ICON_FA_CLOCK_ROTATE_LEFT " Недавние файлы")) {
                     for (const auto& path : uiManager.recentDbPaths) {
                         if (ImGui::MenuItem(path.c_str())) {
                             if (dbManager.open(path)) {
@@ -114,40 +121,40 @@ int main(int, char**) {
                     ImGui::EndMenu();
                 }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Выход")) {
+                if (ImGui::MenuItem(ICON_FA_ARROW_RIGHT_FROM_BRACKET " Выход")) {
                     glfwSetWindowShouldClose(window, true);
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Справочники")) {
-                if (ImGui::MenuItem("КОСГУ")) {
+            if (ImGui::BeginMenu(ICON_FA_BOOK " Справочники")) {
+                if (ImGui::MenuItem(ICON_FA_HASHTAG " КОСГУ")) {
                     uiManager.kosguView.IsVisible = true;
                 }
-                if (ImGui::MenuItem("Банк")) {
+                if (ImGui::MenuItem(ICON_FA_BUILDING_COLUMNS " Банк")) {
                     uiManager.paymentsView.IsVisible = true;
                 }
-                if (ImGui::MenuItem("Контрагенты")) {
+                if (ImGui::MenuItem(ICON_FA_ADDRESS_BOOK " Контрагенты")) {
                     uiManager.counterpartiesView.IsVisible = true;
                 }
-                if (ImGui::MenuItem("Договоры")) {
+                if (ImGui::MenuItem(ICON_FA_FILE_CONTRACT " Договоры")) {
                     uiManager.contractsView.IsVisible = true;
                 }
-                if (ImGui::MenuItem("Накладные")) {
+                if (ImGui::MenuItem(ICON_FA_FILE_INVOICE " Накладные")) {
                     uiManager.invoicesView.IsVisible = true;
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Импорт")) {
-                if (ImGui::MenuItem("Импорт из TSV")) {
+            if (ImGui::BeginMenu(ICON_FA_FILE_IMPORT " Импорт")) {
+                if (ImGui::MenuItem(ICON_FA_TABLE_CELLS " Импорт из TSV")) {
                     ImGuiFileDialog::Instance()->OpenDialog("ImportTsvFileDlgKey", "Выберите TSV файл для импорта", ".tsv");
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Отчеты")) {
-                if (ImGui::MenuItem("SQL Запрос")) {
+            if (ImGui::BeginMenu(ICON_FA_FILE_PDF " Отчеты")) {
+                if (ImGui::MenuItem(ICON_FA_DATABASE " SQL Запрос")) {
                     uiManager.sqlQueryView.IsVisible = true;
                 }
-                if (ImGui::MenuItem("Экспорт в PDF")) {
+                if (ImGui::MenuItem(ICON_FA_FILE_EXPORT " Экспорт в PDF")) {
                     ImGuiFileDialog::Instance()->OpenDialog("SavePdfFileDlgKey", "Сохранить отчет в PDF", ".pdf");
                 }
                 ImGui::EndMenu();
