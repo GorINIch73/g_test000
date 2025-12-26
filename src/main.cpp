@@ -101,6 +101,18 @@ int main(int, char**) {
                 if (ImGui::MenuItem("Открыть фай базы")) {
                     ImGuiFileDialog::Instance()->OpenDialog("OpenDbFileDlgKey", "Выберите файл базы данных", ".db");
                 }
+                if (ImGui::BeginMenu("Недавние файлы")) {
+                    for (const auto& path : uiManager.recentDbPaths) {
+                        if (ImGui::MenuItem(path.c_str())) {
+                            if (dbManager.open(path)) {
+                                currentDbPath = path;
+                                SetWindowTitle(window, currentDbPath);
+                                uiManager.AddRecentDbPath(path);
+                            }
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Выход")) {
                     glfwSetWindowShouldClose(window, true);
@@ -150,6 +162,7 @@ int main(int, char**) {
                 if (dbManager.createDatabase(filePathName)) {
                     currentDbPath = filePathName;
                     SetWindowTitle(window, currentDbPath);
+                    uiManager.AddRecentDbPath(filePathName);
                 }
             }
             ImGuiFileDialog::Instance()->Close();
@@ -160,6 +173,7 @@ int main(int, char**) {
                 if (dbManager.open(filePathName)) {
                     currentDbPath = filePathName;
                     SetWindowTitle(window, currentDbPath);
+                    uiManager.AddRecentDbPath(filePathName);
                 }
             }
             ImGuiFileDialog::Instance()->Close();

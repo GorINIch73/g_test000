@@ -15,9 +15,13 @@
 class UIManager {
 public:
     UIManager();
+    ~UIManager();
     void Render();
     void SetDatabaseManager(DatabaseManager* dbManager);
     void SetPdfReporter(PdfReporter* pdfReporter);
+    void AddRecentDbPath(const std::string& path);
+
+    std::vector<std::string> recentDbPaths;
 
     PaymentsView paymentsView;
     KosguView kosguView;
@@ -27,6 +31,9 @@ public:
     SqlQueryView sqlQueryView;
 
 private:
+    void LoadRecentDbPaths();
+    void SaveRecentDbPaths();
+
     DatabaseManager* dbManager;
     PdfReporter* pdfReporter; // Add PdfReporter pointer
 };
