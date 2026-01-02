@@ -3,12 +3,12 @@
 #include "../UIManager.h"
 #include "imgui.h"
 #include <fstream>
-#include <sstream>
 #include <iostream>
+#include <sstream>
 #include <thread>
 
 // Helper to split a string by a delimiter
-static std::vector<std::string> split(const std::string& s, char delimiter) {
+static std::vector<std::string> split(const std::string &s, char delimiter) {
     std::vector<std::string> tokens;
     std::string token;
     std::istringstream tokenStream(s);
@@ -21,10 +21,11 @@ static std::vector<std::string> split(const std::string& s, char delimiter) {
 ImportMapView::ImportMapView() {
     Title = "Сопоставление полей для импорта";
     IsVisible = false;
-    targetFields = {"Дата", "Номер док.", "Тип", "Сумма", "Получатель", "Назначение"};
+    targetFields = {"Дата",  "Номер док.", "Тип",
+                    "Сумма", "Контрагент", "Назначение"};
 }
 
-void ImportMapView::Open(const std::string& filePath) {
+void ImportMapView::Open(const std::string &filePath) {
     Reset();
     importFilePath = filePath;
     ReadPreviewData();
@@ -36,17 +37,19 @@ void ImportMapView::Reset() {
     fileHeaders.clear();
     sampleData.clear();
     currentMapping.clear();
-    for(const auto& field : targetFields) {
+    for (const auto &field : targetFields) {
         currentMapping[field] = -1; // -1 means "Not Mapped"
     }
 }
 
 void ImportMapView::ReadPreviewData() {
-    if (importFilePath.empty()) return;
+    if (importFilePath.empty())
+        return;
 
     std::ifstream file(importFilePath);
     if (!file.is_open()) {
-        std::cerr << "ERROR: Could not open file for reading header: " << importFilePath << std::endl;
+        std::cerr << "ERROR: Could not open file for reading header: "
+                  << importFilePath << std::endl;
         return;
     }
 
@@ -65,16 +68,16 @@ void ImportMapView::ReadPreviewData() {
     }
 }
 
-void ImportMapView::SetUIManager(UIManager* manager) {
-    uiManager = manager;
-}
+void ImportMapView::SetUIManager(UIManager *manager) { uiManager = manager; }
 
 void ImportMapView::Render() {
     if (!IsVisible) {
         return;
     }
 
-    float footer_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing(); // Height of buttons + spacing
+    float footer_height =
+        ImGui::GetStyle().ItemSpacing.y +
+        ImGui::GetFrameHeightWithSpacing(); // Height of buttons + spacing
 
     ImGui::SetNextWindowSize(ImVec2(700, 550), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(Title.c_str(), &IsVisible)) {
@@ -82,37 +85,44 @@ void ImportMapView::Render() {
         ImGui::Separator();
 
         // --- Mapping Controls ---
-        ImGui::Text("Укажите, какой столбец в файле соответствует какому полю в программе.");
+        ImGui::Text("Укажите, какой столбец в файле соответствует какому полю "
+                    "в программе.");
         if (ImGui::BeginTable("mapping_table", 2, ImGuiTableFlags_Borders)) {
-            ImGui::TableSetupColumn("Поле в программе", ImGuiTableColumnFlags_WidthFixed, 150.0f);
+            ImGui::TableSetupColumn("Поле в программе",
+                                    ImGuiTableColumnFlags_WidthFixed, 150.0f);
             ImGui::TableSetupColumn("Столбец из файла");
             ImGui::TableHeadersRow();
 
-            for (const auto& targetField : targetFields) {
+            for (const auto &targetField : targetFields) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::Text("%s", targetField.c_str());
 
                 ImGui::TableNextColumn();
                 ImGui::PushID(targetField.c_str());
-                
-                const char* current_item = (currentMapping[targetField] >= 0 && currentMapping[targetField] < fileHeaders.size()) 
-                                           ? fileHeaders[currentMapping[targetField]].c_str() 
-                                           : "Не выбрано";
+
+                const char *current_item =
+                    (currentMapping[targetField] >= 0 &&
+                     currentMapping[targetField] < fileHeaders.size())
+                        ? fileHeaders[currentMapping[targetField]].c_str()
+                        : "Не выбрано";
 
                 if (ImGui::BeginCombo("", current_item)) {
                     bool is_selected = (currentMapping[targetField] == -1);
                     if (ImGui::Selectable("Не выбрано", is_selected)) {
                         currentMapping[targetField] = -1;
                     }
-                    if (is_selected) ImGui::SetItemDefaultFocus();
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
 
                     for (int i = 0; i < fileHeaders.size(); ++i) {
                         is_selected = (currentMapping[targetField] == i);
-                        if (ImGui::Selectable(fileHeaders[i].c_str(), is_selected)) {
+                        if (ImGui::Selectable(fileHeaders[i].c_str(),
+                                              is_selected)) {
                             currentMapping[targetField] = i;
                         }
-                        if (is_selected) ImGui::SetItemDefaultFocus();
+                        if (is_selected)
+                            ImGui::SetItemDefaultFocus();
                     }
                     ImGui::EndCombo();
                 }
@@ -127,20 +137,26 @@ void ImportMapView::Render() {
         // --- Data Preview Table ---
         ImGui::Text("Предпросмотр данных (первые 5 строк):");
         float preview_start_y = ImGui::GetCursorPosY();
-        
-        // Calculate available height for preview
-        float available_height_for_preview = ImGui::GetWindowHeight() - footer_height - preview_start_y - ImGui::GetStyle().ItemSpacing.y;
 
-        ImGui::BeginChild("PreviewScrollRegion", ImVec2(0, available_height_for_preview), true, ImGuiWindowFlags_HorizontalScrollbar);
-        if (ImGui::BeginTable("preview_table", fileHeaders.size(), ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollX)) {
-            for(const auto& header : fileHeaders) {
+        // Calculate available height for preview
+        float available_height_for_preview = ImGui::GetWindowHeight() -
+                                             footer_height - preview_start_y -
+                                             ImGui::GetStyle().ItemSpacing.y;
+
+        ImGui::BeginChild("PreviewScrollRegion",
+                          ImVec2(0, available_height_for_preview), true,
+                          ImGuiWindowFlags_HorizontalScrollbar);
+        if (ImGui::BeginTable("preview_table", fileHeaders.size(),
+                              ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
+                                  ImGuiTableFlags_ScrollX)) {
+            for (const auto &header : fileHeaders) {
                 ImGui::TableSetupColumn(header.c_str());
             }
             ImGui::TableHeadersRow();
 
-            for(const auto& row : sampleData) {
+            for (const auto &row : sampleData) {
                 ImGui::TableNextRow();
-                for(const auto& cell : row) {
+                for (const auto &cell : row) {
                     ImGui::TableNextColumn();
                     ImGui::TextUnformatted(cell.c_str());
                 }
@@ -158,13 +174,9 @@ void ImportMapView::Render() {
                 uiManager->isImporting = true;
                 std::thread([this]() {
                     uiManager->importManager->ImportPaymentsFromTsv(
-                        importFilePath,
-                        dbManager,
-                        currentMapping,
-                        uiManager->importProgress,
-                        uiManager->importMessage,
-                        uiManager->importMutex
-                    );
+                        importFilePath, dbManager, currentMapping,
+                        uiManager->importProgress, uiManager->importMessage,
+                        uiManager->importMutex);
                     uiManager->isImporting = false;
                 }).detach();
             }
