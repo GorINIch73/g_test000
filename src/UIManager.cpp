@@ -23,22 +23,29 @@ UIManager::~UIManager() {
     SaveRecentDbPaths();
 }
 
-void UIManager::AddRecentDbPath(const std::string& path) {
+void UIManager::AddRecentDbPath(std::string path) {
     recentDbPaths.erase(std::remove(recentDbPaths.begin(), recentDbPaths.end(), path), recentDbPaths.end());
     recentDbPaths.insert(recentDbPaths.begin(), path);
     if (recentDbPaths.size() > MAX_RECENT_PATHS) {
         recentDbPaths.resize(MAX_RECENT_PATHS);
     }
+    SaveRecentDbPaths();
 }
 
 void UIManager::LoadRecentDbPaths() {
     std::ifstream file(RECENT_PATHS_FILE);
     if (!file.is_open()) return;
+
+    recentDbPaths.clear();
     std::string path;
     while (std::getline(file, path)) {
         if (!path.empty()) {
             recentDbPaths.push_back(path);
         }
+    }
+
+    if (recentDbPaths.size() > MAX_RECENT_PATHS) {
+        recentDbPaths.resize(MAX_RECENT_PATHS);
     }
 }
 

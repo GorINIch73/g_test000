@@ -26,7 +26,7 @@ public:
     void SetPdfReporter(PdfReporter* pdfReporter);
     void SetImportManager(ImportManager* importManager);
     void SetWindow(GLFWwindow* window);
-    void AddRecentDbPath(const std::string& path);
+    void AddRecentDbPath(std::string path);
     void HandleFileDialogs();
     void SetWindowTitle(const std::string& db_path);
     void SetActiveView(BaseView* view);
