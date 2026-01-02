@@ -65,6 +65,7 @@ void UIManager::SetDatabaseManager(DatabaseManager* manager) {
     contractsView.SetDatabaseManager(manager);
     invoicesView.SetDatabaseManager(manager);
     sqlQueryView.SetDatabaseManager(manager);
+    settingsView.SetDatabaseManager(manager);
 }
 
 void UIManager::SetPdfReporter(PdfReporter* reporter) {
@@ -154,6 +155,7 @@ void UIManager::Render() {
     if(contractsView.IsVisible) activeView = &contractsView;
     if(invoicesView.IsVisible) activeView = &invoicesView;
     if(sqlQueryView.IsVisible) activeView = &sqlQueryView;
+    if(settingsView.IsVisible) activeView = &settingsView;
 
     paymentsView.Render();
     kosguView.Render();
@@ -161,4 +163,5 @@ void UIManager::Render() {
     contractsView.Render();
     invoicesView.Render();
     sqlQueryView.Render();
+    settingsView.Render();
 }

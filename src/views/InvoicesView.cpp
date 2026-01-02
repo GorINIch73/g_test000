@@ -5,7 +5,7 @@
 #include <algorithm>
 
 InvoicesView::InvoicesView()
-    : dbManager(nullptr), pdfReporter(nullptr), selectedInvoiceIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedInvoiceIndex(-1), showEditModal(false), isAdding(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 

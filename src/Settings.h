@@ -1,0 +1,11 @@
+#pragma once
+
+#include <string>
+
+struct Settings {
+    int id;
+    std::string organization_name;
+    std::string period_start_date;
+    std::string period_end_date;
+    std::string note;
+};

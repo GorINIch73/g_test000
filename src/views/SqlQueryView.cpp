@@ -3,8 +3,7 @@
 #include <cstring>
 #include "../IconsFontAwesome6.h"
 
-SqlQueryView::SqlQueryView()
-    : dbManager(nullptr), pdfReporter(nullptr) {
+SqlQueryView::SqlQueryView() {
     memset(queryInputBuffer, 0, sizeof(queryInputBuffer));
 }
 

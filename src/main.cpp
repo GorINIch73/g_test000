@@ -153,6 +153,12 @@ int main(int, char**) {
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu(ICON_FA_GEAR " Сервис")) {
+                if (ImGui::MenuItem(ICON_FA_SLIDERS " Настройки")) {
+                    uiManager.settingsView.IsVisible = true;
+                }
+                ImGui::EndMenu();
+            }
             ImGui::EndMainMenuBar();
         }
 

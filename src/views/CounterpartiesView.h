@@ -16,9 +16,6 @@ public:
 private:
     void RefreshData();
 
-    DatabaseManager* dbManager;
-    PdfReporter* pdfReporter;
-
     std::vector<Counterparty> counterparties;
     Counterparty selectedCounterparty;
     int selectedCounterpartyIndex;

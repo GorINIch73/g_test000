@@ -15,9 +15,6 @@ public:
     const char* GetTitle() override;
 
 private:
-    DatabaseManager* dbManager;
-    PdfReporter* pdfReporter;
-
     char queryInputBuffer[4096];
     struct QueryResult {
         std::vector<std::string> columns;

@@ -13,6 +13,7 @@
 #include "views/ContractsView.h"
 #include "views/InvoicesView.h"
 #include "views/SqlQueryView.h"
+#include "views/SettingsView.h"
 
 struct GLFWwindow;
 class ImportManager;
@@ -20,7 +21,7 @@ class ImportManager;
 class UIManager {
 public:
     UIManager();
-    ~UIManager();
+~UIManager();
     void Render();
     void SetDatabaseManager(DatabaseManager* dbManager);
     void SetPdfReporter(PdfReporter* pdfReporter);
@@ -40,6 +41,7 @@ public:
     ContractsView contractsView;
     InvoicesView invoicesView;
     SqlQueryView sqlQueryView;
+    SettingsView settingsView;
     BaseView* activeView = nullptr;
 
 private:

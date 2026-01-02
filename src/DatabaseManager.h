@@ -10,16 +10,21 @@
 #include "Payment.h"
 #include "Invoice.h"
 #include "PaymentDetail.h"
+#include "Settings.h"
 
 class DatabaseManager {
 public:
     DatabaseManager();
-    ~DatabaseManager();
+~DatabaseManager();
 
     bool open(const std::string& filepath);
     void close();
     bool createDatabase(const std::string& filepath);
     bool is_open() const;
+
+    // Settings
+    Settings getSettings();
+    bool updateSettings(const Settings& settings);
 
     std::vector<Kosgu> getKosguEntries();
     bool addKosguEntry(const Kosgu& entry);

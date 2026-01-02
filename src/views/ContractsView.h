@@ -18,9 +18,6 @@ private:
     void RefreshData();
     void RefreshDropdownData();
 
-    DatabaseManager* dbManager;
-    PdfReporter* pdfReporter;
-
     std::vector<Contract> contracts;
     Contract selectedContract;
     int selectedContractIndex;

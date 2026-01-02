@@ -5,7 +5,7 @@
 #include <algorithm>
 
 CounterpartiesView::CounterpartiesView()
-    : dbManager(nullptr), pdfReporter(nullptr), selectedCounterpartyIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedCounterpartyIndex(-1), showEditModal(false), isAdding(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 

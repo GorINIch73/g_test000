@@ -5,7 +5,7 @@
 #include <algorithm>
 
 ContractsView::ContractsView()
-    : dbManager(nullptr), pdfReporter(nullptr), selectedContractIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedContractIndex(-1), showEditModal(false), isAdding(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 

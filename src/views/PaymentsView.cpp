@@ -12,9 +12,7 @@
 #include <string>
 
 PaymentsView::PaymentsView()
-    : dbManager(nullptr),
-      pdfReporter(nullptr),
-      selectedPaymentIndex(-1),
+    : selectedPaymentIndex(-1),
       isAdding(false),
       selectedDetailIndex(-1),
       isAddingDetail(false) {

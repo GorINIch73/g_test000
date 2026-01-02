@@ -16,9 +16,6 @@ public:
 private:
     void RefreshData();
 
-    DatabaseManager* dbManager;
-    PdfReporter* pdfReporter;
-
     std::vector<Kosgu> kosguEntries;
     Kosgu selectedKosgu;
     int selectedKosguIndex;

@@ -17,4 +17,9 @@ public:
     virtual const char* GetTitle() = 0;
 
     bool IsVisible = false;
+    std::string Title;
+
+protected:
+    DatabaseManager* dbManager = nullptr;
+    PdfReporter* pdfReporter = nullptr;
 };

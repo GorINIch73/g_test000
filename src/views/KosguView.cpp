@@ -5,7 +5,7 @@
 #include <algorithm>
 
 KosguView::KosguView()
-    : dbManager(nullptr), pdfReporter(nullptr), selectedKosguIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedKosguIndex(-1), showEditModal(false), isAdding(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 

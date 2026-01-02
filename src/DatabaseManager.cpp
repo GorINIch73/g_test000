@@ -17,6 +17,26 @@ bool DatabaseManager::open(const std::string& filepath) {
         std::cerr << "Cannot open database: " << sqlite3_errmsg(db) << std::endl;
         return false;
     }
+
+    // Create Settings table if it doesn't exist and insert default row
+    std::string create_settings_table_sql = 
+        "CREATE TABLE IF NOT EXISTS Settings ("
+        "id INTEGER PRIMARY KEY,"
+        "organization_name TEXT,"
+        "period_start_date TEXT,"
+        "period_end_date TEXT,"
+        "note TEXT);";
+    if (!execute(create_settings_table_sql)) {
+        close();
+        return false;
+    }
+
+    std::string insert_default_settings = "INSERT OR IGNORE INTO Settings (id, organization_name, period_start_date, period_end_date, note) VALUES (1, '', '', '', '');";
+    if (!execute(insert_default_settings)) {
+        close();
+        return false;
+    }
+
     return true;
 }
 
@@ -110,7 +130,6 @@ bool DatabaseManager::createDatabase(const std::string& filepath) {
             return false;
         }
     }
-
     return true;
 }
 
@@ -952,5 +971,59 @@ bool DatabaseManager::executeSelect(const std::string& sql, std::vector<std::str
         return false;
     }
     
+    return true;
+}
+
+// Settings
+Settings DatabaseManager::getSettings() {
+    Settings settings = {1, "", "", "", ""}; // Default settings
+    if (!db) return settings;
+
+    std::string sql = "SELECT organization_name, period_start_date, period_end_date, note FROM Settings WHERE id = 1;";
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement for getSettings: " << sqlite3_errmsg(db) << std::endl;
+        return settings;
+    }
+
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        const unsigned char* org_name = sqlite3_column_text(stmt, 0);
+        const unsigned char* start_date = sqlite3_column_text(stmt, 1);
+        const unsigned char* end_date = sqlite3_column_text(stmt, 2);
+        const unsigned char* note = sqlite3_column_text(stmt, 3);
+
+        settings.organization_name = org_name ? (const char*)org_name : "";
+        settings.period_start_date = start_date ? (const char*)start_date : "";
+        settings.period_end_date = end_date ? (const char*)end_date : "";
+        settings.note = note ? (const char*)note : "";
+    }
+
+    sqlite3_finalize(stmt);
+    return settings;
+}
+
+bool DatabaseManager::updateSettings(const Settings& settings) {
+    if (!db) return false;
+    std::string sql = "UPDATE Settings SET organization_name = ?, period_start_date = ?, period_end_date = ?, note = ? WHERE id = 1;";
+    sqlite3_stmt* stmt = nullptr;
+    int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (rc != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement for updateSettings: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    sqlite3_bind_text(stmt, 1, settings.organization_name.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 2, settings.period_start_date.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 3, settings.period_end_date.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 4, settings.note.c_str(), -1, SQLITE_STATIC);
+
+    rc = sqlite3_step(stmt);
+    sqlite3_finalize(stmt);
+
+    if (rc != SQLITE_DONE) {
+        std::cerr << "Failed to update Settings: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
     return true;
 }

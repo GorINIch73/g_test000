@@ -25,9 +25,6 @@ private:
     void RefreshData();
     void RefreshDropdownData();
 
-    DatabaseManager* dbManager;
-    PdfReporter* pdfReporter;
-
     std::vector<Payment> payments;
     Payment selectedPayment;
     int selectedPaymentIndex;
