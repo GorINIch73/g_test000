@@ -50,13 +50,13 @@ const char *PaymentsView::GetTitle() { return "Справочник 'Банк' (
 std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>>
 PaymentsView::GetDataAsStrings() {
     std::vector<std::string> headers = {"Дата",      "Номер",      "Тип",
-                                        "Сумма",     "Плательщик", "Получатель",
+                                        "Сумма",     "Получатель",
                                         "Назначение"};
     std::vector<std::vector<std::string>> rows; // Declared here
 
     for (const auto &p : payments) {
         rows.push_back({p.date, p.doc_number, p.type, std::to_string(p.amount),
-                        p.payer, p.recipient, p.description});
+                        p.recipient, p.description});
     }
     return {headers, rows};
 }
@@ -310,13 +310,6 @@ void PaymentsView::Render() {
         }
 
         if (ImGui::InputDouble("Сумма", &selectedPayment.amount)) {
-        }
-
-        char payerBuf[256];
-        snprintf(payerBuf, sizeof(payerBuf), "%s",
-                 selectedPayment.payer.c_str());
-        if (ImGui::InputText("Плательщик", payerBuf, sizeof(payerBuf))) {
-            selectedPayment.payer = payerBuf;
         }
 
         char recipientBuf[256];

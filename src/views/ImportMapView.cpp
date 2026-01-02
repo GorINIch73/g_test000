@@ -19,7 +19,7 @@ static std::vector<std::string> split(const std::string& s, char delimiter) {
 ImportMapView::ImportMapView() {
     Title = "Сопоставление полей для импорта";
     IsVisible = false;
-    targetFields = {"Дата", "Номер док.", "Тип", "Сумма", "Плательщик", "Получатель", "Назначение"};
+    targetFields = {"Дата", "Номер док.", "Тип", "Сумма", "Получатель", "Назначение"};
 }
 
 void ImportMapView::Open(const std::string& filePath) {
@@ -75,6 +75,8 @@ void ImportMapView::Render() {
         return;
     }
 
+    float footer_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing(); // Height of buttons + spacing
+
     ImGui::SetNextWindowSize(ImVec2(700, 550), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(Title.c_str(), &IsVisible)) {
         ImGui::Text("Файл: %s", importFilePath.c_str());
@@ -128,7 +130,6 @@ void ImportMapView::Render() {
         float preview_start_y = ImGui::GetCursorPosY();
         
         // Calculate available height for preview
-        float footer_height = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing(); // Height of buttons + spacing
         float available_height_for_preview = ImGui::GetWindowHeight() - footer_height - preview_start_y - ImGui::GetStyle().ItemSpacing.y;
 
         ImGui::BeginChild("PreviewScrollRegion", ImVec2(0, available_height_for_preview), true, ImGuiWindowFlags_HorizontalScrollbar);

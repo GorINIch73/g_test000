@@ -85,7 +85,7 @@ bool ImportManager::ImportPaymentsFromTsv(const std::string& filepath, DatabaseM
         payment.date = convertDateToDBFormat(get_value_from_row(row, mapping, "Дата"));
         payment.doc_number = get_value_from_row(row, mapping, "Номер док.");
         payment.type = get_value_from_row(row, mapping, "Тип");
-        payment.payer = get_value_from_row(row, mapping, "Плательщик");
+        std::string local_payer_name = get_value_from_row(row, mapping, "Плательщик"); // Get payer name into a local variable
         payment.recipient = get_value_from_row(row, mapping, "Получатель");
         payment.description = get_value_from_row(row, mapping, "Назначение");
 
@@ -98,13 +98,12 @@ bool ImportManager::ImportPaymentsFromTsv(const std::string& filepath, DatabaseM
         }
 
         // --- Heuristic to determine payment type if not provided ---
+        // Now only relies on recipient since payer is removed from Payment struct
         if (payment.type.empty()) {
-            if (!payment.payer.empty()) {
-                payment.type = "income";
-            } else if (!payment.recipient.empty()) {
+            if (!payment.recipient.empty()) { // If recipient is present, assume expense
                 payment.type = "expense";
-            } else {
-                payment.type = "unknown";
+            } else { // Otherwise, if recipient is also empty, assume income by default or mark as unknown
+                payment.type = "income"; // Default to income if no clear expense indicator
             }
         }
 
@@ -115,7 +114,7 @@ bool ImportManager::ImportPaymentsFromTsv(const std::string& filepath, DatabaseM
         // --- Existing logic for parsing description and handling counterparties ---
         Counterparty counterparty;
         if(payment.type == "income") {
-            counterparty.name = payment.payer;
+            counterparty.name = local_payer_name; // Use local variable for income counterparty
         } else {
             counterparty.name = payment.recipient;
         }

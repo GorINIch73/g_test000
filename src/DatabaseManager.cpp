@@ -95,7 +95,6 @@ bool DatabaseManager::createDatabase(const std::string& filepath) {
         "doc_number TEXT,"
         "type TEXT NOT NULL CHECK(type IN ('income', 'expense')),"
         "amount REAL NOT NULL,"
-        "payer TEXT,"
         "recipient TEXT,"
         "description TEXT,"
         "counterparty_id INTEGER,"
@@ -683,8 +682,8 @@ bool DatabaseManager::addPayment(Payment& payment) {
               << ", Amount: " << payment.amount
               << ", Desc: " << payment.description << std::endl;
 
-    std::string sql = "INSERT INTO Payments (date, doc_number, type, amount, payer, recipient, description, counterparty_id) "
-                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?);";
+    std::string sql = "INSERT INTO Payments (date, doc_number, type, amount, recipient, description, counterparty_id) "
+                      "VALUES (?, ?, ?, ?, ?, ?, ?);";
     sqlite3_stmt* stmt = nullptr;
     int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
     if (rc != SQLITE_OK) {
@@ -695,13 +694,12 @@ bool DatabaseManager::addPayment(Payment& payment) {
     sqlite3_bind_text(stmt, 2, payment.doc_number.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 3, payment.type.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_double(stmt, 4, payment.amount);
-    sqlite3_bind_text(stmt, 5, payment.payer.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 6, payment.recipient.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 7, payment.description.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, payment.recipient.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, payment.description.c_str(), -1, SQLITE_STATIC);
     if (payment.counterparty_id != -1) {
-        sqlite3_bind_int(stmt, 8, payment.counterparty_id);
+        sqlite3_bind_int(stmt, 7, payment.counterparty_id);
     } else {
-        sqlite3_bind_null(stmt, 8);
+        sqlite3_bind_null(stmt, 7);
     }
     
     rc = sqlite3_step(stmt);
@@ -728,7 +726,6 @@ static int payment_select_callback(void* data, int argc, char** argv, char** azC
         else if (colName == "doc_number") p.doc_number = argv[i] ? argv[i] : "";
         else if (colName == "type") p.type = argv[i] ? argv[i] : "";
         else if (colName == "amount") p.amount = argv[i] ? std::stod(argv[i]) : 0.0;
-        else if (colName == "payer") p.payer = argv[i] ? argv[i] : "";
         else if (colName == "recipient") p.recipient = argv[i] ? argv[i] : "";
         else if (colName == "description") p.description = argv[i] ? argv[i] : "";
         else if (colName == "counterparty_id") p.counterparty_id = argv[i] ? std::stoi(argv[i]) : -1;
@@ -741,7 +738,7 @@ std::vector<Payment> DatabaseManager::getPayments() {
     std::vector<Payment> payments;
     if (!db) return payments;
 
-    std::string sql = "SELECT * FROM Payments;";
+    std::string sql = "SELECT id, date, doc_number, type, amount, recipient, description, counterparty_id FROM Payments;";
     char* errmsg = nullptr;
     int rc = sqlite3_exec(db, sql.c_str(), payment_select_callback, &payments, &errmsg);
     if (rc != SQLITE_OK) {
@@ -754,7 +751,7 @@ std::vector<Payment> DatabaseManager::getPayments() {
 bool DatabaseManager::updatePayment(const Payment& payment) {
     if (!db) return false;
     std::string sql = "UPDATE Payments SET date = ?, doc_number = ?, type = ?, amount = ?, "
-                      "payer = ?, recipient = ?, description = ?, counterparty_id = ? "
+                      "recipient = ?, description = ?, counterparty_id = ? "
                       "WHERE id = ?;";
     sqlite3_stmt* stmt = nullptr;
     int rc = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
@@ -766,15 +763,14 @@ bool DatabaseManager::updatePayment(const Payment& payment) {
     sqlite3_bind_text(stmt, 2, payment.doc_number.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_text(stmt, 3, payment.type.c_str(), -1, SQLITE_STATIC);
     sqlite3_bind_double(stmt, 4, payment.amount);
-    sqlite3_bind_text(stmt, 5, payment.payer.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 6, payment.recipient.c_str(), -1, SQLITE_STATIC);
-    sqlite3_bind_text(stmt, 7, payment.description.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 5, payment.recipient.c_str(), -1, SQLITE_STATIC);
+    sqlite3_bind_text(stmt, 6, payment.description.c_str(), -1, SQLITE_STATIC);
     if (payment.counterparty_id != -1) {
-        sqlite3_bind_int(stmt, 8, payment.counterparty_id);
+        sqlite3_bind_int(stmt, 7, payment.counterparty_id);
     } else {
-        sqlite3_bind_null(stmt, 8);
+        sqlite3_bind_null(stmt, 7);
     }
-    sqlite3_bind_int(stmt, 9, payment.id);
+    sqlite3_bind_int(stmt, 8, payment.id);
 
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
