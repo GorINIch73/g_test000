@@ -107,17 +107,14 @@ void CounterpartiesView::Render() {
 
     ImGui::InputText("Фильтр по имени", filterText, sizeof(filterText));
 
-    const float editorHeight = ImGui::GetTextLineHeightWithSpacing() * 8;
-
     // Таблица со списком
-    ImGui::BeginChild("CounterpartiesList", ImVec2(0, -editorHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("CounterpartiesList", ImVec2(0, list_view_height), true, ImGuiWindowFlags_HorizontalScrollbar);
     if (ImGui::BeginTable("counterparties_table", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable)) {
         ImGui::TableSetupColumn("ID", 0, 0.0f, 0);
         ImGui::TableSetupColumn("Наименование", ImGuiTableColumnFlags_DefaultSort, 0.0f, 1);
         ImGui::TableSetupColumn("ИНН", 0, 0.0f, 2);
         ImGui::TableHeadersRow();
 
-        // Сортировка
         if (ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs()) {
             if (sort_specs->SpecsDirty) {
                 SortCounterparties(counterparties, sort_specs);
@@ -157,11 +154,15 @@ void CounterpartiesView::Render() {
     }
     ImGui::EndChild();
 
-    ImGui::Separator();
+    ImGui::InvisibleButton("h_splitter", ImVec2(-1, 8.0f));
+    if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); }
+    if (ImGui::IsItemActive()) {
+        list_view_height += ImGui::GetIO().MouseDelta.y;
+        if(list_view_height < 50.0f) list_view_height = 50.0f;
+    }
 
     // Редактор
     if (selectedCounterpartyIndex != -1 || isAdding) {
-        float editor_width = ImGui::GetContentRegionAvail().x * 0.4f;
         ImGui::BeginChild("CounterpartyEditor", ImVec2(editor_width, 0), true);
 
         if (isAdding) {
@@ -183,6 +184,14 @@ void CounterpartiesView::Render() {
             selectedCounterparty.inn = innBuf;
         }
         ImGui::EndChild();
+        ImGui::SameLine();
+
+        ImGui::InvisibleButton("v_splitter", ImVec2(8.0f, -1));
+        if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW); }
+        if (ImGui::IsItemActive()) {
+            editor_width += ImGui::GetIO().MouseDelta.x;
+            if(editor_width < 100.0f) editor_width = 100.0f;
+        }
         ImGui::SameLine();
 
         ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
@@ -210,11 +219,12 @@ void CounterpartiesView::Render() {
         ImGui::EndChild();
 
     } else {
-        ImGui::BeginChild("CounterpartyEditor");
+        ImGui::BeginChild("BottomPane", ImVec2(0,0), true);
         ImGui::Text("Выберите контрагента для редактирования или добавьте нового.");
         ImGui::EndChild();
     }
 
     ImGui::End();
 }
+
 

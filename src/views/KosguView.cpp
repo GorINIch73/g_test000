@@ -107,16 +107,13 @@ void KosguView::Render() {
 
     ImGui::InputText("Фильтр по наименованию", filterText, sizeof(filterText));
 
-    const float editorHeight = ImGui::GetTextLineHeightWithSpacing() * 8;
-    
-    ImGui::BeginChild("KosguList", ImVec2(0, -editorHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("KosguList", ImVec2(0, list_view_height), true, ImGuiWindowFlags_HorizontalScrollbar);
     if (ImGui::BeginTable("kosgu_table", 3, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable)) {
         ImGui::TableSetupColumn("ID", 0, 0.0f, 0);
         ImGui::TableSetupColumn("Код", ImGuiTableColumnFlags_DefaultSort, 0.0f, 1);
         ImGui::TableSetupColumn("Наименование", 0, 0.0f, 2);
         ImGui::TableHeadersRow();
 
-        // Сортировка
         if (ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs()) {
             if (sort_specs->SpecsDirty) {
                 SortKosgu(kosguEntries, sort_specs);
@@ -156,10 +153,14 @@ void KosguView::Render() {
     }
     ImGui::EndChild();
 
-    ImGui::Separator();
+    ImGui::InvisibleButton("h_splitter", ImVec2(-1, 8.0f));
+    if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); }
+    if (ImGui::IsItemActive()) {
+        list_view_height += ImGui::GetIO().MouseDelta.y;
+        if(list_view_height < 50.0f) list_view_height = 50.0f;
+    }
 
     if (selectedKosguIndex != -1 || isAdding) {
-        float editor_width = ImGui::GetContentRegionAvail().x * 0.4f;
         ImGui::BeginChild("KosguEditor", ImVec2(editor_width, 0), true);
 
         if (isAdding) {
@@ -182,6 +183,14 @@ void KosguView::Render() {
         ImGui::EndChild();
         ImGui::SameLine();
         
+        ImGui::InvisibleButton("v_splitter", ImVec2(8.0f, -1));
+        if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW); }
+        if (ImGui::IsItemActive()) {
+            editor_width += ImGui::GetIO().MouseDelta.x;
+            if(editor_width < 100.0f) editor_width = 100.0f;
+        }
+        ImGui::SameLine();
+
         ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
         ImGui::Text("Расшифровки платежей:");
         if (ImGui::BeginTable("payment_details_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
@@ -207,11 +216,12 @@ void KosguView::Render() {
         ImGui::EndChild();
 
     } else {
-        ImGui::BeginChild("KosguEditor");
+        ImGui::BeginChild("BottomPane", ImVec2(0,0), true);
         ImGui::Text("Выберите запись для редактирования или добавьте новую.");
         ImGui::EndChild();
     }
 
     ImGui::End();
 }
+
 

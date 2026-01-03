@@ -42,4 +42,6 @@ private:
     std::vector<Contract> contractsForDropdown;
     std::vector<Invoice> invoicesForDropdown;
     char filterText[256];
+    float list_view_height = 200.0f;
+    float editor_width = 400.0f;
 };

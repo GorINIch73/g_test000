@@ -190,10 +190,8 @@ void PaymentsView::Render() {
 
     ImGui::InputText("Фильтр по назначению", filterText, sizeof(filterText));
 
-    const float halfHeight = ImGui::GetContentRegionAvail().y * 0.5f;
-
     // --- Список платежей ---
-    ImGui::BeginChild("PaymentsList", ImVec2(0, halfHeight), true,
+    ImGui::BeginChild("PaymentsList", ImVec2(0, list_view_height), true,
                       ImGuiWindowFlags_HorizontalScrollbar);
     if (ImGui::BeginTable("payments_table", 4,
                           ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
@@ -252,14 +250,20 @@ void PaymentsView::Render() {
         ImGui::EndTable();
     }
     ImGui::EndChild();
+    
+    ImGui::InvisibleButton("h_splitter", ImVec2(-1, 8.0f));
+    if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); }
+    if (ImGui::IsItemActive()) {
+        list_view_height += ImGui::GetIO().MouseDelta.y;
+        if(list_view_height < 50.0f) list_view_height = 50.0f;
+    }
 
-    ImGui::Separator();
 
     // --- Редактор платежей и расшифровок ---
     ImGui::BeginChild("Editors", ImVec2(0, 0), false);
 
     ImGui::BeginChild("PaymentEditor",
-                      ImVec2(ImGui::GetContentRegionAvail().x * 0.5f, 0), true);
+                      ImVec2(editor_width, 0), true);
     if (selectedPaymentIndex != -1 || isAdding) {
         if (isAdding) {
             ImGui::Text("Добавление нового платежа");
@@ -353,6 +357,14 @@ void PaymentsView::Render() {
     }
     ImGui::EndChild();
 
+    ImGui::SameLine();
+    
+    ImGui::InvisibleButton("v_splitter", ImVec2(8.0f, -1));
+    if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW); }
+    if (ImGui::IsItemActive()) {
+        editor_width += ImGui::GetIO().MouseDelta.x;
+        if(editor_width < 100.0f) editor_width = 100.0f;
+    }
     ImGui::SameLine();
 
     // --- Расшифровка платежа ---

@@ -28,4 +28,6 @@ private:
     std::vector<ContractPaymentInfo> payment_info;
     std::vector<Counterparty> counterpartiesForDropdown;
     char filterText[256];
+    float list_view_height = 200.0f;
+    float editor_width = 400.0f;
 };

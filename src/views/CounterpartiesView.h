@@ -24,4 +24,6 @@ private:
     bool isAdding;
     std::vector<ContractPaymentInfo> payment_info;
     char filterText[256];
+    float list_view_height = 200.0f;
+    float editor_width = 400.0f;
 };

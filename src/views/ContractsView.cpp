@@ -125,10 +125,8 @@ void ContractsView::Render() {
 
     ImGui::InputText("Фильтр по номеру", filterText, sizeof(filterText));
 
-    const float editorHeight = ImGui::GetTextLineHeightWithSpacing() * 8;
-
     // Таблица со списком
-    ImGui::BeginChild("ContractsList", ImVec2(0, -editorHeight), true, ImGuiWindowFlags_HorizontalScrollbar);
+    ImGui::BeginChild("ContractsList", ImVec2(0, list_view_height), true, ImGuiWindowFlags_HorizontalScrollbar);
     if (ImGui::BeginTable("contracts_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_Sortable)) {
         ImGui::TableSetupColumn("ID", 0, 0.0f, 0);
         ImGui::TableSetupColumn("Номер", 0, 0.0f, 1);
@@ -136,7 +134,6 @@ void ContractsView::Render() {
         ImGui::TableSetupColumn("Контрагент", 0, 0.0f, 3);
         ImGui::TableHeadersRow();
 
-        // Сортировка
         if (ImGuiTableSortSpecs* sort_specs = ImGui::TableGetSortSpecs()) {
             if (sort_specs->SpecsDirty) {
                 SortContracts(contracts, sort_specs);
@@ -164,112 +161,124 @@ void ContractsView::Render() {
             bool is_selected = (selectedContractIndex == i);
             char label[256];
             sprintf(label, "%d##%d", contracts[i].id, i);
-                        if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                            selectedContractIndex = i;
-                            selectedContract = contracts[i];
-                            isAdding = false;
-                            if(dbManager) {
-                                payment_info = dbManager->getPaymentInfoForContract(selectedContract.id);
-                            }
-                        }
-                        if (is_selected) {
-                             ImGui::SetItemDefaultFocus();
-                        }
-            
-                        ImGui::TableNextColumn();
-                        ImGui::Text("%s", contracts[i].number.c_str());
-                        ImGui::TableNextColumn();
-                        ImGui::Text("%s", contracts[i].date.c_str());
-                        ImGui::TableNextColumn();
-                        ImGui::Text("%s", getCounterpartyName(contracts[i].counterparty_id));
-                    }
-                    ImGui::EndTable();
+            if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
+                selectedContractIndex = i;
+                selectedContract = contracts[i];
+                isAdding = false;
+                if(dbManager) {
+                    payment_info = dbManager->getPaymentInfoForContract(selectedContract.id);
                 }
-                ImGui::EndChild();
+            }
+            if (is_selected) {
+                 ImGui::SetItemDefaultFocus();
+            }
             
-                ImGui::Separator();
-                
-                    // Редактор
-                    if (selectedContractIndex != -1 || isAdding) {
-                        float editor_width = ImGui::GetContentRegionAvail().x * 0.4f;
-                        ImGui::BeginChild("ContractEditor", ImVec2(editor_width, 0), true);
-                
-                        if (isAdding) {
-                            ImGui::Text("Добавление нового договора");
-                        } else {
-                            ImGui::Text("Редактирование договора ID: %d", selectedContract.id);
-                        }
-                        
-                        char numberBuf[256];
-                        char dateBuf[12];
-                        
-                        snprintf(numberBuf, sizeof(numberBuf), "%s", selectedContract.number.c_str());
-                        snprintf(dateBuf, sizeof(dateBuf), "%s", selectedContract.date.c_str());
-                
-                        if (ImGui::InputText("Номер", numberBuf, sizeof(numberBuf))) {
-                            selectedContract.number = numberBuf;
-                        }
-                        if (ImGui::InputText("Дата", dateBuf, sizeof(dateBuf))) {
-                            selectedContract.date = dateBuf;
-                        }
-                        
-                        if (!counterpartiesForDropdown.empty()) {
-                            auto getCounterpartyName = [&](int id) -> const char* {
-                                for (const auto& cp : counterpartiesForDropdown) {
-                                    if (cp.id == id) {
-                                        return cp.name.c_str();
-                                    }
-                                }
-                                return "N/A";
-                            };
-                            const char* currentCounterpartyName = getCounterpartyName(selectedContract.counterparty_id);
-                            
-                            if (ImGui::BeginCombo("Контрагент", currentCounterpartyName)) {
-                                for (const auto& cp : counterpartiesForDropdown) {
-                                    bool isSelected = (cp.id == selectedContract.counterparty_id);
-                                    if (ImGui::Selectable(cp.name.c_str(), isSelected)) {
-                                        selectedContract.counterparty_id = cp.id;
-                                    }
-                                    if (isSelected) {
-                                        ImGui::SetItemDefaultFocus();
-                                    }
-                                }
-                                ImGui::EndCombo();
-                            }
-                        }
-                        ImGui::EndChild(); // End of ContractEditor
-                        ImGui::SameLine();
-                
-                        ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
-                        ImGui::Text("Расшифровки платежей:");
-                        if (ImGui::BeginTable("payment_details_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
-                            ImGui::TableSetupColumn("Дата");
-                            ImGui::TableSetupColumn("Номер док.");
-                            ImGui::TableSetupColumn("Сумма");
-                            ImGui::TableSetupColumn("Назначение");
-                            ImGui::TableHeadersRow();
-                
-                            for (const auto& info : payment_info) {
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-                                ImGui::Text("%s", info.date.c_str());
-                                ImGui::TableNextColumn();
-                                ImGui::Text("%s", info.doc_number.c_str());
-                                ImGui::TableNextColumn();
-                                ImGui::Text("%.2f", info.amount);
-                                ImGui::TableNextColumn();
-                                ImGui::Text("%s", info.description.c_str());
-                            }
-                            ImGui::EndTable();
-                        }
-                        ImGui::EndChild(); // End of PaymentDetails
-                
-                    } else {
-                        ImGui::BeginChild("ContractEditor");
-                        ImGui::Text("Выберите договор для редактирования или добавьте новый.");
-                        ImGui::EndChild();
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", contracts[i].number.c_str());
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", contracts[i].date.c_str());
+            ImGui::TableNextColumn();
+            ImGui::Text("%s", getCounterpartyName(contracts[i].counterparty_id));
+        }
+        ImGui::EndTable();
+    }
+    ImGui::EndChild();
+
+    ImGui::InvisibleButton("h_splitter", ImVec2(-1, 8.0f));
+    if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); }
+    if (ImGui::IsItemActive()) {
+        list_view_height += ImGui::GetIO().MouseDelta.y;
+        if(list_view_height < 50.0f) list_view_height = 50.0f;
+    }
+    
+    // Редактор
+    if (selectedContractIndex != -1 || isAdding) {
+        ImGui::BeginChild("ContractEditor", ImVec2(editor_width, 0), true);
+
+        if (isAdding) {
+            ImGui::Text("Добавление нового договора");
+        } else {
+            ImGui::Text("Редактирование договора ID: %d", selectedContract.id);
+        }
+        
+        char numberBuf[256];
+        char dateBuf[12];
+        
+        snprintf(numberBuf, sizeof(numberBuf), "%s", selectedContract.number.c_str());
+        snprintf(dateBuf, sizeof(dateBuf), "%s", selectedContract.date.c_str());
+
+        if (ImGui::InputText("Номер", numberBuf, sizeof(numberBuf))) {
+            selectedContract.number = numberBuf;
+        }
+        if (ImGui::InputText("Дата", dateBuf, sizeof(dateBuf))) {
+            selectedContract.date = dateBuf;
+        }
+        
+        if (!counterpartiesForDropdown.empty()) {
+            auto getCounterpartyName = [&](int id) -> const char* {
+                for (const auto& cp : counterpartiesForDropdown) {
+                    if (cp.id == id) {
+                        return cp.name.c_str();
                     }
-                
-                    ImGui::End();
                 }
+                return "N/A";
+            };
+            const char* currentCounterpartyName = getCounterpartyName(selectedContract.counterparty_id);
+            
+            if (ImGui::BeginCombo("Контрагент", currentCounterpartyName)) {
+                for (const auto& cp : counterpartiesForDropdown) {
+                    bool isSelected = (cp.id == selectedContract.counterparty_id);
+                    if (ImGui::Selectable(cp.name.c_str(), isSelected)) {
+                        selectedContract.counterparty_id = cp.id;
+                    }
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+        }
+        ImGui::EndChild(); 
+        ImGui::SameLine();
+
+        ImGui::InvisibleButton("v_splitter", ImVec2(8.0f, -1));
+        if (ImGui::IsItemHovered()) { ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW); }
+        if (ImGui::IsItemActive()) {
+            editor_width += ImGui::GetIO().MouseDelta.x;
+            if(editor_width < 100.0f) editor_width = 100.0f;
+        }
+        ImGui::SameLine();
+
+        ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
+        ImGui::Text("Расшифровки платежей:");
+        if (ImGui::BeginTable("payment_details_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
+            ImGui::TableSetupColumn("Дата");
+            ImGui::TableSetupColumn("Номер док.");
+            ImGui::TableSetupColumn("Сумма");
+            ImGui::TableSetupColumn("Назначение");
+            ImGui::TableHeadersRow();
+
+            for (const auto& info : payment_info) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.date.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.doc_number.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%.2f", info.amount);
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.description.c_str());
+            }
+            ImGui::EndTable();
+        }
+        ImGui::EndChild(); 
+    } else {
+        ImGui::BeginChild("BottomPane", ImVec2(0,0), true);
+        ImGui::Text("Выберите договор для редактирования или добавьте новый.");
+        ImGui::EndChild();
+    }
+
+    ImGui::End();
+}
+
                 
