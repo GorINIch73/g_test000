@@ -68,6 +68,7 @@ void UIManager::SetDatabaseManager(DatabaseManager* manager) {
     sqlQueryView.SetDatabaseManager(manager);
     settingsView.SetDatabaseManager(manager);
     importMapView.SetDatabaseManager(manager);
+    regexesView.SetDatabaseManager(manager);
 }
 
 void UIManager::SetPdfReporter(PdfReporter* reporter) {
@@ -158,6 +159,7 @@ void UIManager::Render() {
     if(invoicesView.IsVisible) activeView = &invoicesView;
     if(sqlQueryView.IsVisible) activeView = &sqlQueryView;
     if(settingsView.IsVisible) activeView = &settingsView;
+    if(regexesView.IsVisible) activeView = &regexesView;
 
     paymentsView.Render();
     kosguView.Render();
@@ -167,6 +169,7 @@ void UIManager::Render() {
     sqlQueryView.Render();
     settingsView.Render();
     importMapView.Render();
+    regexesView.Render();
 
     if (isImporting) {
         ImGui::OpenPopup("Importing...");

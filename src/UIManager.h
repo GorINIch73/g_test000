@@ -17,6 +17,7 @@
 #include "views/SqlQueryView.h"
 #include "views/SettingsView.h"
 #include "views/ImportMapView.h"
+#include "views/RegexesView.h"
 
 struct GLFWwindow;
 class ImportManager;
@@ -51,6 +52,7 @@ public:
     SqlQueryView sqlQueryView;
     SettingsView settingsView;
     ImportMapView importMapView;
+    RegexesView regexesView;
     ImportManager* importManager;
     BaseView* activeView = nullptr;
 

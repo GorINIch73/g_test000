@@ -157,6 +157,9 @@ int main(int, char**) {
                 if (ImGui::MenuItem(ICON_FA_SLIDERS " Настройки")) {
                     uiManager.settingsView.IsVisible = true;
                 }
+                if (ImGui::MenuItem(ICON_FA_SQUARE_ROOT_VARIABLE " Регулярные выражения")) {
+                    uiManager.regexesView.IsVisible = true;
+                }
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();

@@ -45,4 +45,7 @@ private:
     std::string contract_match;
     std::string kosgu_match;
     std::string invoice_match;
+    std::string contract_pattern_buffer;
+    std::string kosgu_pattern_buffer;
+    std::string invoice_pattern_buffer;
 };
