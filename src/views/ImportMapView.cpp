@@ -1,9 +1,9 @@
 #include "ImportMapView.h"
+#include "../IconsFontAwesome6.h"
 #include "../ImportManager.h"
 #include "../UIManager.h"
 #include "imgui.h"
 #include "imgui_stdlib.h"
-#include "../IconsFontAwesome6.h"
 #include <fstream>
 #include <iostream>
 #include <regex>
@@ -23,21 +23,22 @@ static std::vector<std::string> split(const std::string &s, char delimiter) {
 
 static std::string get_regex_match(const std::string &text,
                                    const std::string &pattern) {
-    std::cout << "Testing regex:" << std::endl;
-    std::cout << "  Text:    '" << text << "'" << std::endl;
-    std::cout << "  Pattern: '" << pattern << "'" << std::endl;
+    // std::cout << "Testing regex:" << std::endl;
+    // std::cout << "  Text:    '" << text << "'" << std::endl;
+    // std::cout << "  Pattern: '" << pattern << "'" << std::endl;
     try {
         std::regex re(pattern);
         std::smatch match;
         if (std::regex_search(text, match, re) && match.size() > 1) {
-            std::cout << "  Match:   '" << match[1].str() << "'" << std::endl;
+            // std::cout << "  Match:   '" << match[1].str() << "'" <<
+            // std::endl;
             return match[1].str();
         }
     } catch (const std::regex_error &e) {
-        std::cerr << "  Regex error: " << e.what() << std::endl;
+        // std::cerr << "  Regex error: " << e.what() << std::endl;
         return "Regex error: " + std::string(e.what());
     }
-    std::cout << "  No match." << std::endl;
+    // std::cout << "  No match." << std::endl;
     return "No match";
 }
 
@@ -110,8 +111,7 @@ void ImportMapView::Render() {
     }
 
     float footer_height =
-        ImGui::GetStyle().ItemSpacing.y +
-        ImGui::GetFrameHeightWithSpacing(); 
+        ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
 
     ImGui::SetNextWindowSize(ImVec2(700, 750), ImGuiCond_FirstUseEver);
     if (ImGui::Begin(Title.c_str(), &IsVisible)) {
@@ -167,7 +167,7 @@ void ImportMapView::Render() {
 
         ImGui::Separator();
         ImGui::Spacing();
-        
+
         // --- Data Preview Table ---
         ImGui::Text("Предпросмотр данных (первые 30 строк):");
         ImGui::BeginChild("PreviewScrollRegion",
@@ -185,7 +185,9 @@ void ImportMapView::Render() {
                 ImGui::TableNextRow();
                 for (int j = 0; j < sampleData[i].size(); ++j) {
                     ImGui::TableNextColumn();
-                    if (ImGui::Selectable(sampleData[i][j].c_str(), false, ImGuiSelectableFlags_SpanAllColumns)) {
+                    if (ImGui::Selectable(
+                            sampleData[i][j].c_str(), false,
+                            ImGuiSelectableFlags_SpanAllColumns)) {
                         int desc_col = currentMapping["Назначение"];
                         if (desc_col != -1 && desc_col < sampleData[i].size()) {
                             sample_description = sampleData[i][desc_col];
@@ -196,19 +198,22 @@ void ImportMapView::Render() {
             ImGui::EndTable();
         }
         ImGui::EndChild(); // End PreviewScrollRegion
-        
+
         ImGui::Separator();
         ImGui::Spacing();
 
-
         // --- Regex Testing UI ---
         ImGui::Text("Тестирование регулярных выражений");
-        ImGui::InputTextMultiline("Пример назначения платежа", &sample_description, ImVec2(-1, ImGui::GetTextLineHeight() * 4));
+        ImGui::InputTextMultiline("Пример назначения платежа",
+                                  &sample_description,
+                                  ImVec2(-1, ImGui::GetTextLineHeight() * 4));
 
-        auto render_regex_selector = [&](const char* label, int& selected_index, std::string& match_result, std::string& edit_buffer) {
+        auto render_regex_selector = [&](const char *label, int &selected_index,
+                                         std::string &match_result,
+                                         std::string &edit_buffer) {
             ImGui::PushID(label);
-            const char* current_regex_name = "Не выбрано";
-            
+            const char *current_regex_name = "Не выбрано";
+
             if (selected_index >= 0 && selected_index < regexes.size()) {
                 current_regex_name = regexes[selected_index].name.c_str();
             }
@@ -216,15 +221,17 @@ void ImportMapView::Render() {
             if (ImGui::BeginCombo(label, current_regex_name)) {
                 for (int i = 0; i < regexes.size(); ++i) {
                     bool is_selected = (selected_index == i);
-                    if (ImGui::Selectable(regexes[i].name.c_str(), is_selected)) {
+                    if (ImGui::Selectable(regexes[i].name.c_str(),
+                                          is_selected)) {
                         selected_index = i;
                         edit_buffer = regexes[i].pattern;
                     }
-                    if (is_selected) ImGui::SetItemDefaultFocus();
+                    if (is_selected)
+                        ImGui::SetItemDefaultFocus();
                 }
                 ImGui::EndCombo();
             }
-            
+
             if (selected_index >= 0) {
                 ImGui::InputText("##pattern_edit", &edit_buffer);
                 match_result = get_regex_match(sample_description, edit_buffer);
@@ -234,9 +241,12 @@ void ImportMapView::Render() {
             ImGui::PopID();
         };
 
-        render_regex_selector("Договор", contract_regex_index, contract_match, contract_pattern_buffer);
-        render_regex_selector("КОСГУ", kosgu_regex_index, kosgu_match, kosgu_pattern_buffer);
-        render_regex_selector("Накладная", invoice_regex_index, invoice_match, invoice_pattern_buffer);
+        render_regex_selector("Договор", contract_regex_index, contract_match,
+                              contract_pattern_buffer);
+        render_regex_selector("КОСГУ", kosgu_regex_index, kosgu_match,
+                              kosgu_pattern_buffer);
+        render_regex_selector("Накладная", invoice_regex_index, invoice_match,
+                              invoice_pattern_buffer);
 
         // Pin buttons to the bottom
         ImGui::SetCursorPosY(ImGui::GetWindowHeight() - footer_height);
