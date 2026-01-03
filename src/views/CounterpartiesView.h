@@ -3,6 +3,7 @@
 #include "BaseView.h"
 #include <vector>
 #include "../Counterparty.h"
+#include "../Payment.h"
 
 class CounterpartiesView : public BaseView {
 public:
@@ -21,5 +22,6 @@ private:
     int selectedCounterpartyIndex;
     bool showEditModal;
     bool isAdding;
+    std::vector<ContractPaymentInfo> payment_info;
     char filterText[256];
 };

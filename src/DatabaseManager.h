@@ -38,24 +38,28 @@ public:
     std::vector<Counterparty> getCounterparties();
     bool updateCounterparty(const Counterparty& counterparty);
     bool deleteCounterparty(int id);
+    std::vector<ContractPaymentInfo> getPaymentInfoForCounterparty(int counterparty_id);
 
     bool addContract(Contract& contract); // Pass by reference to get the id back
     int getContractIdByNumberDate(const std::string& number, const std::string& date);
     std::vector<Contract> getContracts();
     bool updateContract(const Contract& contract);
     bool deleteContract(int id);
+    std::vector<ContractPaymentInfo> getPaymentInfoForContract(int contract_id);
 
     bool addInvoice(Invoice& invoice); // Pass by reference to get the id back
     int getInvoiceIdByNumberDate(const std::string& number, const std::string& date);
     std::vector<Invoice> getInvoices();
     bool updateInvoice(const Invoice& invoice);
     bool deleteInvoice(int id);
+    std::vector<ContractPaymentInfo> getPaymentInfoForInvoice(int invoice_id);
 
 
     std::vector<Payment> getPayments();
     bool addPayment(Payment& payment);
     bool updatePayment(const Payment& payment);
     bool deletePayment(int id);
+    std::vector<ContractPaymentInfo> getPaymentInfoForKosgu(int kosgu_id);
 
     bool addPaymentDetail(PaymentDetail& detail);
     std::vector<PaymentDetail> getPaymentDetails(int payment_id);

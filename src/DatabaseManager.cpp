@@ -445,6 +445,37 @@ bool DatabaseManager::deleteCounterparty(int id) {
     return true;
 }
 
+std::vector<ContractPaymentInfo> DatabaseManager::getPaymentInfoForCounterparty(int counterparty_id) {
+    std::vector<ContractPaymentInfo> results;
+    if (!db) return results;
+
+    std::string sql = "SELECT p.date, p.doc_number, pd.amount, p.description "
+                      "FROM Payments p "
+                      "JOIN PaymentDetails pd ON p.id = pd.payment_id "
+                      "JOIN Contracts c ON pd.contract_id = c.id "
+                      "WHERE c.counterparty_id = ?;";
+    
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement for getPaymentInfoForCounterparty: " << sqlite3_errmsg(db) << std::endl;
+        return results;
+    }
+
+    sqlite3_bind_int(stmt, 1, counterparty_id);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        ContractPaymentInfo info;
+        info.date = (const char*)sqlite3_column_text(stmt, 0);
+        info.doc_number = (const char*)sqlite3_column_text(stmt, 1);
+        info.amount = sqlite3_column_double(stmt, 2);
+        info.description = (const char*)sqlite3_column_text(stmt, 3);
+        results.push_back(info);
+    }
+
+    sqlite3_finalize(stmt);
+    return results;
+}
+
 // Contract CRUD
 bool DatabaseManager::addContract(Contract &contract) {
     if (!db)
@@ -599,6 +630,36 @@ bool DatabaseManager::deleteContract(int id) {
     return true;
 }
 
+std::vector<ContractPaymentInfo> DatabaseManager::getPaymentInfoForContract(int contract_id) {
+    std::vector<ContractPaymentInfo> results;
+    if (!db) return results;
+
+    std::string sql = "SELECT p.date, p.doc_number, pd.amount, p.description "
+                      "FROM Payments p "
+                      "JOIN PaymentDetails pd ON p.id = pd.payment_id "
+                      "WHERE pd.contract_id = ?;";
+    
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement for getPaymentInfoForContract: " << sqlite3_errmsg(db) << std::endl;
+        return results;
+    }
+
+    sqlite3_bind_int(stmt, 1, contract_id);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        ContractPaymentInfo info;
+        info.date = (const char*)sqlite3_column_text(stmt, 0);
+        info.doc_number = (const char*)sqlite3_column_text(stmt, 1);
+        info.amount = sqlite3_column_double(stmt, 2);
+        info.description = (const char*)sqlite3_column_text(stmt, 3);
+        results.push_back(info);
+    }
+
+    sqlite3_finalize(stmt);
+    return results;
+}
+
 // Invoice CRUD
 bool DatabaseManager::addInvoice(Invoice &invoice) {
     if (!db)
@@ -748,6 +809,36 @@ bool DatabaseManager::deleteInvoice(int id) {
         return false;
     }
     return true;
+}
+
+std::vector<ContractPaymentInfo> DatabaseManager::getPaymentInfoForInvoice(int invoice_id) {
+    std::vector<ContractPaymentInfo> results;
+    if (!db) return results;
+
+    std::string sql = "SELECT p.date, p.doc_number, pd.amount, p.description "
+                      "FROM Payments p "
+                      "JOIN PaymentDetails pd ON p.id = pd.payment_id "
+                      "WHERE pd.invoice_id = ?;";
+    
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement for getPaymentInfoForInvoice: " << sqlite3_errmsg(db) << std::endl;
+        return results;
+    }
+
+    sqlite3_bind_int(stmt, 1, invoice_id);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        ContractPaymentInfo info;
+        info.date = (const char*)sqlite3_column_text(stmt, 0);
+        info.doc_number = (const char*)sqlite3_column_text(stmt, 1);
+        info.amount = sqlite3_column_double(stmt, 2);
+        info.description = (const char*)sqlite3_column_text(stmt, 3);
+        results.push_back(info);
+    }
+
+    sqlite3_finalize(stmt);
+    return results;
 }
 
 // Payment CRUD
@@ -905,6 +996,36 @@ bool DatabaseManager::deletePayment(int id) {
         return false;
     }
     return true;
+}
+
+std::vector<ContractPaymentInfo> DatabaseManager::getPaymentInfoForKosgu(int kosgu_id) {
+    std::vector<ContractPaymentInfo> results;
+    if (!db) return results;
+
+    std::string sql = "SELECT p.date, p.doc_number, pd.amount, p.description "
+                      "FROM Payments p "
+                      "JOIN PaymentDetails pd ON p.id = pd.payment_id "
+                      "WHERE pd.kosgu_id = ?;";
+    
+    sqlite3_stmt* stmt = nullptr;
+    if (sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Failed to prepare statement for getPaymentInfoForKosgu: " << sqlite3_errmsg(db) << std::endl;
+        return results;
+    }
+
+    sqlite3_bind_int(stmt, 1, kosgu_id);
+
+    while (sqlite3_step(stmt) == SQLITE_ROW) {
+        ContractPaymentInfo info;
+        info.date = (const char*)sqlite3_column_text(stmt, 0);
+        info.doc_number = (const char*)sqlite3_column_text(stmt, 1);
+        info.amount = sqlite3_column_double(stmt, 2);
+        info.description = (const char*)sqlite3_column_text(stmt, 3);
+        results.push_back(info);
+    }
+
+    sqlite3_finalize(stmt);
+    return results;
 }
 
 // PaymentDetail CRUD

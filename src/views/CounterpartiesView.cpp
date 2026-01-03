@@ -140,6 +140,9 @@ void CounterpartiesView::Render() {
                 selectedCounterpartyIndex = i;
                 selectedCounterparty = counterparties[i];
                 isAdding = false;
+                if(dbManager) {
+                    payment_info = dbManager->getPaymentInfoForCounterparty(selectedCounterparty.id);
+                }
             }
             if (is_selected) {
                  ImGui::SetItemDefaultFocus();
@@ -157,8 +160,10 @@ void CounterpartiesView::Render() {
     ImGui::Separator();
 
     // Редактор
-    ImGui::BeginChild("CounterpartyEditor");
     if (selectedCounterpartyIndex != -1 || isAdding) {
+        float editor_width = ImGui::GetContentRegionAvail().x * 0.4f;
+        ImGui::BeginChild("CounterpartyEditor", ImVec2(editor_width, 0), true);
+
         if (isAdding) {
             ImGui::Text("Добавление нового контрагента");
         } else {
@@ -177,10 +182,39 @@ void CounterpartiesView::Render() {
         if (ImGui::InputText("ИНН", innBuf, sizeof(innBuf))) {
             selectedCounterparty.inn = innBuf;
         }
+        ImGui::EndChild();
+        ImGui::SameLine();
+
+        ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
+        ImGui::Text("Расшифровки платежей:");
+        if (ImGui::BeginTable("payment_details_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
+            ImGui::TableSetupColumn("Дата");
+            ImGui::TableSetupColumn("Номер док.");
+            ImGui::TableSetupColumn("Сумма");
+            ImGui::TableSetupColumn("Назначение");
+            ImGui::TableHeadersRow();
+
+            for (const auto& info : payment_info) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.date.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.doc_number.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%.2f", info.amount);
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.description.c_str());
+            }
+            ImGui::EndTable();
+        }
+        ImGui::EndChild();
+
     } else {
+        ImGui::BeginChild("CounterpartyEditor");
         ImGui::Text("Выберите контрагента для редактирования или добавьте нового.");
+        ImGui::EndChild();
     }
-    ImGui::EndChild();
 
     ImGui::End();
 }
+

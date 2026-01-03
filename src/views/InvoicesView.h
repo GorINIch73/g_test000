@@ -4,6 +4,7 @@
 #include <vector>
 #include "../Invoice.h"
 #include "../Contract.h"
+#include "../Payment.h"
 
 class InvoicesView : public BaseView {
 public:
@@ -24,6 +25,7 @@ private:
     bool showEditModal;
     bool isAdding;
 
+    std::vector<ContractPaymentInfo> payment_info;
     std::vector<Contract> contractsForDropdown;
     char filterText[256];
 };

@@ -139,6 +139,9 @@ void KosguView::Render() {
                 selectedKosguIndex = i;
                 selectedKosgu = kosguEntries[i];
                 isAdding = false;
+                if(dbManager) {
+                    payment_info = dbManager->getPaymentInfoForKosgu(selectedKosgu.id);
+                }
             }
             if (is_selected) {
                  ImGui::SetItemDefaultFocus();
@@ -155,8 +158,10 @@ void KosguView::Render() {
 
     ImGui::Separator();
 
-    ImGui::BeginChild("KosguEditor");
     if (selectedKosguIndex != -1 || isAdding) {
+        float editor_width = ImGui::GetContentRegionAvail().x * 0.4f;
+        ImGui::BeginChild("KosguEditor", ImVec2(editor_width, 0), true);
+
         if (isAdding) {
             ImGui::Text("Добавление новой записи КОСГУ");
         } else {
@@ -174,10 +179,38 @@ void KosguView::Render() {
         if (ImGui::InputText("Наименование", nameBuf, sizeof(nameBuf))) {
             selectedKosgu.name = nameBuf;
         }
+        ImGui::EndChild();
+        ImGui::SameLine();
+        
+        ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
+        ImGui::Text("Расшифровки платежей:");
+        if (ImGui::BeginTable("payment_details_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
+            ImGui::TableSetupColumn("Дата");
+            ImGui::TableSetupColumn("Номер док.");
+            ImGui::TableSetupColumn("Сумма");
+            ImGui::TableSetupColumn("Назначение");
+            ImGui::TableHeadersRow();
+
+            for (const auto& info : payment_info) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.date.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.doc_number.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%.2f", info.amount);
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.description.c_str());
+            }
+            ImGui::EndTable();
+        }
+        ImGui::EndChild();
+
     } else {
+        ImGui::BeginChild("KosguEditor");
         ImGui::Text("Выберите запись для редактирования или добавьте новую.");
+        ImGui::EndChild();
     }
-    ImGui::EndChild();
 
     ImGui::End();
 }

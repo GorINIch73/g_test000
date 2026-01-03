@@ -167,6 +167,9 @@ void InvoicesView::Render() {
                 selectedInvoiceIndex = i;
                 selectedInvoice = invoices[i];
                 isAdding = false;
+                if(dbManager) {
+                    payment_info = dbManager->getPaymentInfoForInvoice(selectedInvoice.id);
+                }
             }
             if (is_selected) {
                  ImGui::SetItemDefaultFocus();
@@ -186,8 +189,10 @@ void InvoicesView::Render() {
     ImGui::Separator();
 
     // Редактор
-    ImGui::BeginChild("InvoiceEditor");
     if (selectedInvoiceIndex != -1 || isAdding) {
+        float editor_width = ImGui::GetContentRegionAvail().x * 0.4f;
+        ImGui::BeginChild("InvoiceEditor", ImVec2(editor_width, 0), true);
+
         if (isAdding) {
             ImGui::Text("Добавление новой накладной");
         } else {
@@ -231,10 +236,38 @@ void InvoicesView::Render() {
                 ImGui::EndCombo();
             }
         }
+        ImGui::EndChild();
+        ImGui::SameLine();
+
+        ImGui::BeginChild("PaymentDetails", ImVec2(0, 0), true);
+        ImGui::Text("Расшифровки платежей:");
+        if (ImGui::BeginTable("payment_details_table", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY)) {
+            ImGui::TableSetupColumn("Дата");
+            ImGui::TableSetupColumn("Номер док.");
+            ImGui::TableSetupColumn("Сумма");
+            ImGui::TableSetupColumn("Назначение");
+            ImGui::TableHeadersRow();
+
+            for (const auto& info : payment_info) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.date.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.doc_number.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%.2f", info.amount);
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", info.description.c_str());
+            }
+            ImGui::EndTable();
+        }
+        ImGui::EndChild();
     } else {
+        ImGui::BeginChild("InvoiceEditor");
         ImGui::Text("Выберите накладную для редактирования или добавьте новую.");
+        ImGui::EndChild();
     }
-    ImGui::EndChild();
 
     ImGui::End();
 }
+

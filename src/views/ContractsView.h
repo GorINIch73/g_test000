@@ -4,6 +4,7 @@
 #include <vector>
 #include "../Contract.h"
 #include "../Counterparty.h"
+#include "../Payment.h"
 
 class ContractsView : public BaseView {
 public:
@@ -24,6 +25,7 @@ private:
     bool showEditModal;
     bool isAdding;
 
+    std::vector<ContractPaymentInfo> payment_info;
     std::vector<Counterparty> counterpartiesForDropdown;
     char filterText[256];
 };

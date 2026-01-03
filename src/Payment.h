@@ -12,3 +12,10 @@ struct Payment {
     std::string description;
     int counterparty_id;
 };
+
+struct ContractPaymentInfo {
+    std::string date;
+    std::string doc_number;
+    double amount;
+    std::string description;
+};
