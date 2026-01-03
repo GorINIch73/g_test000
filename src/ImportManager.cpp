@@ -213,24 +213,28 @@ bool ImportManager::ImportPaymentsFromTsv(const std::string &filepath,
         }
         int new_payment_id = payment.id;
 
-        std::sregex_iterator kosgu_begin(payment.description.begin(),
-                                         payment.description.end(),
-                                         kosgu_regex);
-        std::sregex_iterator kosgu_end;
+        // --- Новая, более сложная логика обработки КОСГУ ---
+        bool handled = false;
 
-        if (std::distance(kosgu_begin, kosgu_end) == 0) {
-            PaymentDetail detail;
-            detail.payment_id = new_payment_id;
-            detail.kosgu_id = -1;
-            detail.contract_id = current_contract_id;
-            detail.invoice_id = current_invoice_id;
-            detail.amount = payment.amount;
-            dbManager->addPaymentDetail(detail);
-        } else {
-            for (std::sregex_iterator i = kosgu_begin; i != kosgu_end; ++i) {
-                std::smatch match = *i;
-                if (match.size() > 1) {
+        // Сначала ищем шаблон "; в т.ч. KXXX=AMOUNT ..."
+        std::string special_pattern_prefix = "; в т.ч.";
+        size_t special_pos = payment.description.find(special_pattern_prefix);
+
+        if (special_pos != std::string::npos) {
+            std::string details_part = payment.description.substr(special_pos + special_pattern_prefix.length());
+            std::regex special_kosgu_regex("К(\\d{3})=([\\d.]+)");
+            auto details_begin = std::sregex_iterator(details_part.begin(), details_part.end(), special_kosgu_regex);
+            auto details_end = std::sregex_iterator();
+            
+            std::vector<PaymentDetail> details_to_add;
+            double total_details_amount = 0.0;
+            
+            if (std::distance(details_begin, details_end) > 0) {
+                for (std::sregex_iterator i = details_begin; i != details_end; ++i) {
+                    std::smatch match = *i;
                     std::string kosgu_code = match[1].str();
+                    std::string amount_str = match[2].str();
+                    
                     int kosgu_id = dbManager->getKosguIdByCode(kosgu_code);
                     if (kosgu_id == -1) {
                         Kosgu new_kosgu{-1, kosgu_code, "КОСГУ " + kosgu_code};
@@ -239,35 +243,42 @@ bool ImportManager::ImportPaymentsFromTsv(const std::string &filepath,
                         }
                     }
 
-                    double detail_amount = payment.amount;
-                    std::smatch amount_match;
-                    if (std::regex_search(payment.description, amount_match,
-                                          amount_regex)) {
-                        if (amount_match.size() > 2) {
-                            std::string amount_str = amount_match[2].str();
-                            size_t eq_pos = amount_str.find('=');
-                            if (eq_pos != std::string::npos) {
-                                amount_str = amount_str.substr(0, eq_pos);
-                            }
-                            std::replace(amount_str.begin(), amount_str.end(),
-                                         ',', '.');
-                            try {
-                                detail_amount = std::stod(amount_str);
-                            } catch (const std::exception &e) {
-                            }
-                        }
+                    try {
+                        double detail_amount = std::stod(amount_str);
+                        total_details_amount += detail_amount;
+                        
+                        PaymentDetail detail;
+                        detail.payment_id = new_payment_id;
+                        detail.kosgu_id = kosgu_id;
+                        detail.contract_id = current_contract_id;
+                        detail.invoice_id = current_invoice_id;
+                        detail.amount = detail_amount;
+                        details_to_add.push_back(detail);
+                    } catch (const std::exception& e) {
+                        total_details_amount = payment.amount + 1; // Force validation fail
+                        break;
                     }
+                }
 
-                    PaymentDetail detail;
-                    detail.payment_id = new_payment_id;
-                    detail.kosgu_id = kosgu_id;
-                    detail.contract_id = current_contract_id;
-                    detail.invoice_id = current_invoice_id;
-                    detail.amount = detail_amount;
-
-                    dbManager->addPaymentDetail(detail);
+                // ВАЖНО: Проверяем сумму с небольшой погрешностью
+                if (total_details_amount > 0 && total_details_amount <= (payment.amount + 0.01)) {
+                    for (auto& detail : details_to_add) {
+                        dbManager->addPaymentDetail(detail);
+                    }
+                    handled = true;
                 }
             }
+        }
+        
+        // Если специальный шаблон не был обработан или обработан с ошибкой
+        if (!handled) {
+            PaymentDetail detail;
+            detail.payment_id = new_payment_id;
+            detail.kosgu_id = -1;
+            detail.contract_id = current_contract_id;
+            detail.invoice_id = current_invoice_id;
+            detail.amount = payment.amount;
+            dbManager->addPaymentDetail(detail);
         }
     }
 
