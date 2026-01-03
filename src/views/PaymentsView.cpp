@@ -198,15 +198,14 @@ void PaymentsView::Render() {
     if (ImGui::BeginTable("payments_table", 4,
                           ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg |
                               ImGuiTableFlags_Resizable |
-                              ImGuiTableFlags_Sortable)) {
+                              ImGuiTableFlags_Sortable | ImGuiTableFlags_ScrollX)) {
         ImGui::TableSetupColumn("Дата",
                                 ImGuiTableColumnFlags_DefaultSort |
                                     ImGuiTableColumnFlags_PreferSortDescending,
                                 0.0f, 0);
         ImGui::TableSetupColumn("Номер", 0, 0.0f, 1);
         ImGui::TableSetupColumn("Сумма", 0, 0.0f, 2);
-        ImGui::TableSetupColumn("Назначение",
-                                ImGuiTableColumnFlags_WidthStretch, 0.0f, 3);
+        ImGui::TableSetupColumn("Назначение", ImGuiTableColumnFlags_WidthFixed, 600.0f, 3);
         ImGui::TableHeadersRow();
 
         if (ImGuiTableSortSpecs *sort_specs = ImGui::TableGetSortSpecs()) {

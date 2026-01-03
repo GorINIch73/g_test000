@@ -55,14 +55,14 @@ int main(int, char**) {
     // Загрузка шрифта с поддержкой кириллицы (Roboto)
     ImFontConfig font_cfg;
     font_cfg.FontDataOwnedByAtlas = false;
-    io.Fonts->AddFontFromFileTTF("../data/Roboto-Regular.ttf", 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
+    io.Fonts->AddFontFromFileTTF("data/Roboto-Regular.ttf", 16.0f, &font_cfg, io.Fonts->GetGlyphRangesCyrillic());
     
     // Объединение с иконочным шрифтом
     ImFontConfig config;
     config.MergeMode = true;
     config.PixelSnapH = true;
     static const ImWchar icon_ranges[] = { ICON_MIN_FA, ICON_MAX_FA, 0 };
-    io.Fonts->AddFontFromFileTTF("../data/fa-solid-900.otf", 16.0f, &config, icon_ranges);
+    io.Fonts->AddFontFromFileTTF("data/fa-solid-900.otf", 16.0f, &config, icon_ranges);
 
     // Инициализация бэкендов для GLFW и OpenGL
     ImGui_ImplGlfw_InitForOpenGL(window, true);
