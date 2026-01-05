@@ -259,7 +259,8 @@ void ImportMapView::Render() {
                     uiManager->importManager->ImportPaymentsFromTsv(
                         importFilePath, dbManager, currentMapping,
                         uiManager->importProgress, uiManager->importMessage,
-                        uiManager->importMutex);
+                        uiManager->importMutex, contract_pattern_buffer,
+                        kosgu_pattern_buffer, invoice_pattern_buffer);
                     uiManager->isImporting = false;
                 }).detach();
             }

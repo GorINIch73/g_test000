@@ -22,7 +22,10 @@ public:
         const ColumnMapping& mapping,
         std::atomic<float>& progress,
         std::string& message,
-        std::mutex& message_mutex
+        std::mutex& message_mutex,
+        const std::string& contract_regex,
+        const std::string& kosgu_regex,
+        const std::string& invoice_regex
     );
 
 };
