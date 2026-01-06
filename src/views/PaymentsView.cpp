@@ -17,6 +17,10 @@ PaymentsView::PaymentsView()
       selectedDetailIndex(-1),
       isAddingDetail(false) {
     memset(filterText, 0, sizeof(filterText)); // Инициализация filterText
+    memset(counterpartyFilter, 0, sizeof(counterpartyFilter));
+    memset(kosguFilter, 0, sizeof(kosguFilter));
+    memset(contractFilter, 0, sizeof(contractFilter));
+    memset(invoiceFilter, 0, sizeof(invoiceFilter));
 }
 
 void PaymentsView::SetDatabaseManager(DatabaseManager *manager) {
@@ -113,32 +117,6 @@ void PaymentsView::Render() {
         RefreshData();
         RefreshDropdownData();
     }
-
-    // Helper lambdas for dropdowns (defined once at the beginning of Render)
-    auto getKosguCode = [&](int id) -> const char * {
-        for (const auto &k : kosguForDropdown) {
-            if (k.id == id) {
-                return k.code.c_str();
-            }
-        }
-        return "N/A";
-    };
-    auto getContractNumber = [&](int id) -> const char * {
-        for (const auto &c : contractsForDropdown) {
-            if (c.id == id) {
-                return c.number.c_str();
-            }
-        }
-        return "N/A";
-    };
-    auto getInvoiceNumber = [&](int id) -> const char * {
-        for (const auto &inv : invoicesForDropdown) {
-            if (inv.id == id) {
-                return inv.number.c_str();
-            }
-        }
-        return "N/A";
-    };
 
     // --- Панель управления ---
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
@@ -328,29 +306,11 @@ void PaymentsView::Render() {
             ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8));
 
         if (!counterpartiesForDropdown.empty()) {
-            auto getCounterpartyName = [&](int id) -> const char * {
-                for (const auto &cp : counterpartiesForDropdown) {
-                    if (cp.id == id) {
-                        return cp.name.c_str();
-                    }
-                }
-                return "N/A";
-            };
-            const char *currentCounterpartyName =
-                getCounterpartyName(selectedPayment.counterparty_id);
-            if (ImGui::BeginCombo("Контрагент", currentCounterpartyName)) {
-                for (const auto &cp : counterpartiesForDropdown) {
-                    bool isSelected =
-                        (cp.id == selectedPayment.counterparty_id);
-                    if (ImGui::Selectable(cp.name.c_str(), isSelected)) {
-                        selectedPayment.counterparty_id = cp.id;
-                    }
-                    if (isSelected) {
-                        ImGui::SetItemDefaultFocus();
-                    }
-                }
-                ImGui::EndCombo();
+            std::vector<CustomWidgets::ComboItem> counterpartyItems;
+            for (const auto& cp : counterpartiesForDropdown) {
+                counterpartyItems.push_back({cp.id, cp.name});
             }
+            CustomWidgets::ComboWithFilter("Контрагент", selectedPayment.counterparty_id, counterpartyItems, counterpartyFilter, sizeof(counterpartyFilter), 0);
         }
     } else {
         ImGui::Text("Выберите платеж для редактирования.");
@@ -438,13 +398,34 @@ void PaymentsView::Render() {
                 }
 
                 ImGui::TableNextColumn();
-                ImGui::Text("%s", getKosguCode(paymentDetails[i].kosgu_id));
+                const char* kosguCode = "N/A";
+                for (const auto& k : kosguForDropdown) {
+                    if (k.id == paymentDetails[i].kosgu_id) {
+                        kosguCode = k.code.c_str();
+                        break;
+                    }
+                }
+                ImGui::Text("%s", kosguCode);
+
                 ImGui::TableNextColumn();
-                ImGui::Text("%s",
-                            getContractNumber(paymentDetails[i].contract_id));
+                const char* contractNumber = "N/A";
+                for (const auto& c : contractsForDropdown) {
+                    if (c.id == paymentDetails[i].contract_id) {
+                        contractNumber = c.number.c_str();
+                        break;
+                    }
+                }
+                ImGui::Text("%s", contractNumber);
+
                 ImGui::TableNextColumn();
-                ImGui::Text("%s",
-                            getInvoiceNumber(paymentDetails[i].invoice_id));
+                const char* invoiceNumber = "N/A";
+                for (const auto& inv : invoicesForDropdown) {
+                    if (inv.id == paymentDetails[i].invoice_id) {
+                        invoiceNumber = inv.number.c_str();
+                        break;
+                    }
+                }
+                ImGui::Text("%s", invoiceNumber);
             }
             ImGui::EndTable();
         }
@@ -458,49 +439,25 @@ void PaymentsView::Render() {
             ImGui::InputDouble("Сумма##detail", &selectedDetail.amount);
 
             // Dropdown for KOSGU
-            const char *currentKosguCode =
-                getKosguCode(selectedDetail.kosgu_id);
-            if (ImGui::BeginCombo("КОСГУ##detail", currentKosguCode)) {
-                for (const auto &k : kosguForDropdown) {
-                    bool isSelected = (k.id == selectedDetail.kosgu_id);
-                    if (ImGui::Selectable(k.code.c_str(), isSelected)) {
-                        selectedDetail.kosgu_id = k.id;
-                    }
-                    if (isSelected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+            std::vector<CustomWidgets::ComboItem> kosguItems;
+            for (const auto& k : kosguForDropdown) {
+                kosguItems.push_back({k.id, k.code});
             }
+            CustomWidgets::ComboWithFilter("КОСГУ##detail", selectedDetail.kosgu_id, kosguItems, kosguFilter, sizeof(kosguFilter), 0);
 
             // Dropdown for Contract
-            const char *currentContractNumber =
-                getContractNumber(selectedDetail.contract_id);
-            if (ImGui::BeginCombo("Договор##detail", currentContractNumber)) {
-                for (const auto &c : contractsForDropdown) {
-                    bool isSelected = (c.id == selectedDetail.contract_id);
-                    if (ImGui::Selectable(c.number.c_str(), isSelected)) {
-                        selectedDetail.contract_id = c.id;
-                    }
-                    if (isSelected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+            std::vector<CustomWidgets::ComboItem> contractItems;
+            for (const auto& c : contractsForDropdown) {
+                contractItems.push_back({c.id, c.number});
             }
+            CustomWidgets::ComboWithFilter("Договор##detail", selectedDetail.contract_id, contractItems, contractFilter, sizeof(contractFilter), 0);
 
             // Dropdown for Invoice
-            const char *currentInvoiceNumber =
-                getInvoiceNumber(selectedDetail.invoice_id);
-            if (ImGui::BeginCombo("Накладная##detail", currentInvoiceNumber)) {
-                for (const auto &inv : invoicesForDropdown) {
-                    bool isSelected = (inv.id == selectedDetail.invoice_id);
-                    if (ImGui::Selectable(inv.number.c_str(), isSelected)) {
-                        selectedDetail.invoice_id = inv.id;
-                    }
-                    if (isSelected)
-                        ImGui::SetItemDefaultFocus();
-                }
-                ImGui::EndCombo();
+            std::vector<CustomWidgets::ComboItem> invoiceItems;
+            for (const auto& i : invoicesForDropdown) {
+                invoiceItems.push_back({i.id, i.number});
             }
+            CustomWidgets::ComboWithFilter("Накладная##detail", selectedDetail.invoice_id, invoiceItems, invoiceFilter, sizeof(invoiceFilter), 0);
         }
     } else {
         ImGui::Text("Выберите платеж для просмотра расшифровок.");

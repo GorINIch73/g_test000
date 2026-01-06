@@ -120,4 +120,80 @@ bool InputTextMultilineWithWrap(const char *label, std::string *str,
     return changed;
 }
 
+bool ComboWithFilter(const char* label, int& current_id, std::vector<ComboItem>& items, char* search_buffer, int search_buffer_size, ImGuiComboFlags flags) {
+    bool changed = false;
+
+    // Find the current item for preview
+    std::string preview = "Не выбрано";
+    auto current_it = std::find_if(items.begin(), items.end(),
+                                   [&](const ComboItem& i) { return i.id == current_id; });
+    if (current_it != items.end()) {
+        preview = current_it->name;
+    }
+
+    ImGui::PushID(label);
+
+    ImGui::PushItemWidth(-FLT_MIN);
+    if (ImGui::BeginCombo("##combo", preview.c_str(), flags | ImGuiComboFlags_PopupAlignLeft)) {
+        ImGui::PushItemWidth(-FLT_MIN);
+        if (ImGui::InputText("##search", search_buffer, search_buffer_size, ImGuiInputTextFlags_EnterReturnsTrue)) {
+            if (!items.empty()) {
+                if (search_buffer[0] == '\0') {
+                    current_id = items[0].id;
+                } else {
+                    auto it = std::find_if(items.begin(), items.end(), [&](const ComboItem& item) {
+                        return strcasestr(item.name.c_str(), search_buffer) != nullptr;
+                    });
+                    if (it != items.end()) {
+                        current_id = it->id;
+                    }
+                }
+                changed = true;
+                ImGui::CloseCurrentPopup();
+            }
+        }
+        ImGui::PopItemWidth();
+
+        std::vector<ComboItem*> filtered_items;
+        for (auto& item : items) {
+            if (search_buffer[0] == '\0' || strcasestr(item.name.c_str(), search_buffer) != nullptr) {
+                filtered_items.push_back(&item);
+            }
+        }
+
+        if (ImGui::BeginListBox("##list", ImVec2(-FLT_MIN, std::min((float)filtered_items.size() * ImGui::GetTextLineHeightWithSpacing() + 30, 200.0f)))) {
+            for (auto item : filtered_items) {
+                bool is_selected = (current_id == item->id);
+                if (ImGui::Selectable((!item->name.empty() ? item->name.c_str() : "-ПУСТО-"), is_selected)) {
+                    current_id = item->id;
+                    changed = true;
+                    search_buffer[0] = '\0'; // Reset search
+                    ImGui::CloseCurrentPopup();
+                }
+                if (is_selected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndListBox();
+        }
+        ImGui::EndCombo();
+    }
+
+    if (ImGui::IsItemActive() && search_buffer[0] != '\0') {
+        auto exact_match = std::find_if(items.begin(), items.end(), [&](const ComboItem& i) {
+            return strcasecmp(i.name.c_str(), search_buffer) == 0;
+        });
+
+        if (exact_match != items.end()) {
+            current_id = exact_match->id;
+            changed = true;
+            search_buffer[0] = '\0';
+        }
+    }
+
+    ImGui::PopID();
+
+    return changed;
+}
+
 } // namespace CustomWidgets
