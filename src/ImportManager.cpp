@@ -274,7 +274,25 @@ bool ImportManager::ImportPaymentsFromTsv(const std::string &filepath,
         if (!handled) {
             PaymentDetail detail;
             detail.payment_id = new_payment_id;
-            detail.kosgu_id = -1;
+
+            // --- FIX: Use the kosgu_regex if the special pattern fails ---
+            int kosgu_id_from_regex = -1;
+            std::smatch kosgu_matches;
+            if (!kosgu_regex_str.empty() && std::regex_search(payment.description, kosgu_matches, kosgu_regex)) {
+                if (kosgu_matches.size() > 1) { // Assuming the code is in the first capture group
+                    std::string kosgu_code = kosgu_matches[1].str();
+                    kosgu_id_from_regex = dbManager->getKosguIdByCode(kosgu_code);
+                    if (kosgu_id_from_regex == -1) {
+                        Kosgu new_kosgu{-1, kosgu_code, "КОСГУ " + kosgu_code};
+                        if (dbManager->addKosguEntry(new_kosgu)) {
+                            kosgu_id_from_regex = dbManager->getKosguIdByCode(kosgu_code);
+                        }
+                    }
+                }
+            }
+            detail.kosgu_id = kosgu_id_from_regex;
+            // --- END FIX ---
+
             detail.contract_id = current_contract_id;
             detail.invoice_id = current_invoice_id;
             detail.amount = payment.amount;
