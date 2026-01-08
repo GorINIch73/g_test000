@@ -5,7 +5,7 @@
 #include <algorithm>
 
 KosguView::KosguView()
-    : selectedKosguIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedKosguIndex(-1), showEditModal(false), isAdding(false), isDirty(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 
@@ -37,6 +37,41 @@ std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> Kosgu
     return {headers, rows};
 }
 
+void KosguView::OnDeactivate() {
+    SaveChanges();
+}
+
+void KosguView::SaveChanges() {
+    if (!isDirty) {
+        return;
+    }
+
+    if (dbManager) {
+        if (isAdding) {
+            dbManager->addKosguEntry(selectedKosgu);
+            isAdding = false;
+        } else if (selectedKosgu.id != -1) {
+            dbManager->updateKosguEntry(selectedKosgu);
+        }
+
+        std::string current_code = selectedKosgu.code;
+        RefreshData();
+
+        auto it = std::find_if(kosguEntries.begin(), kosguEntries.end(), [&](const Kosgu& k) {
+            return k.code == current_code;
+        });
+
+        if (it != kosguEntries.end()) {
+            selectedKosguIndex = std::distance(kosguEntries.begin(), it);
+            selectedKosgu = *it;
+        } else {
+            selectedKosguIndex = -1;
+        }
+    }
+
+    isDirty = false;
+}
+
 // Вспомогательная функция для сортировки
 static void SortKosgu(std::vector<Kosgu>& kosguEntries, const ImGuiTableSortSpecs* sort_specs) {
     std::sort(kosguEntries.begin(), kosguEntries.end(), [&](const Kosgu& a, const Kosgu& b) {
@@ -64,6 +99,9 @@ void KosguView::Render() {
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
+        if (!IsVisible) {
+            SaveChanges();
+        }
         ImGui::End();
         return;
     }
@@ -74,32 +112,26 @@ void KosguView::Render() {
 
     // Панель управления
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
+        SaveChanges();
         isAdding = true;
         selectedKosguIndex = -1;
         selectedKosgu = Kosgu{-1, "", ""};
+        originalKosgu = selectedKosgu;
+        isDirty = false;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_TRASH " Удалить")) {
+        SaveChanges();
         if (!isAdding && selectedKosguIndex != -1 && dbManager) {
             dbManager->deleteKosguEntry(kosguEntries[selectedKosguIndex].id);
             RefreshData();
             selectedKosgu = Kosgu{};
-        }
-    }
-     ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить")) {
-        if (dbManager) {
-            if (isAdding) {
-                dbManager->addKosguEntry(selectedKosgu);
-                isAdding = false;
-            } else if (selectedKosgu.id != -1) {
-                dbManager->updateKosguEntry(selectedKosgu);
-            }
-            RefreshData();
+            originalKosgu = Kosgu{};
         }
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить")) {
+        SaveChanges();
         RefreshData();
     }
 
@@ -133,11 +165,16 @@ void KosguView::Render() {
             char label[256];
             sprintf(label, "%d##%d", kosguEntries[i].id, i);
             if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                selectedKosguIndex = i;
-                selectedKosgu = kosguEntries[i];
-                isAdding = false;
-                if(dbManager) {
-                    payment_info = dbManager->getPaymentInfoForKosgu(selectedKosgu.id);
+                if (selectedKosguIndex != i) {
+                    SaveChanges();
+                    selectedKosguIndex = i;
+                    selectedKosgu = kosguEntries[i];
+                    originalKosgu = kosguEntries[i];
+                    isAdding = false;
+                    isDirty = false;
+                    if(dbManager) {
+                        payment_info = dbManager->getPaymentInfoForKosgu(selectedKosgu.id);
+                    }
                 }
             }
             if (is_selected) {
@@ -176,9 +213,11 @@ void KosguView::Render() {
 
         if (ImGui::InputText("Код", codeBuf, sizeof(codeBuf))) {
             selectedKosgu.code = codeBuf;
+            isDirty = true;
         }
         if (ImGui::InputText("Наименование", nameBuf, sizeof(nameBuf))) {
             selectedKosgu.name = nameBuf;
+            isDirty = true;
         }
         ImGui::EndChild();
         ImGui::SameLine();

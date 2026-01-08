@@ -14,16 +14,20 @@ public:
     void SetPdfReporter(PdfReporter* pdfReporter) override;
     std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> GetDataAsStrings() override;
     const char* GetTitle() override;
+    void OnDeactivate() override;
 
 private:
     void RefreshData();
     void RefreshDropdownData();
+    void SaveChanges();
 
     std::vector<Contract> contracts;
     Contract selectedContract;
+    Contract originalContract;
     int selectedContractIndex;
     bool showEditModal;
     bool isAdding;
+    bool isDirty = false;
 
     std::vector<ContractPaymentInfo> payment_info;
     std::vector<Counterparty> counterpartiesForDropdown;

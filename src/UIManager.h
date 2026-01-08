@@ -55,6 +55,7 @@ public:
     RegexesView regexesView;
     ImportManager* importManager;
     BaseView* activeView = nullptr;
+    std::vector<BaseView*> allViews;
 
 private:
     void LoadRecentDbPaths();

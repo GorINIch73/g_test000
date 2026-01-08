@@ -13,10 +13,13 @@ public:
     void SetPdfReporter(PdfReporter* reporter) override { /* Not used in this view */ }
     std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> GetDataAsStrings() override { return {}; }
     const char* GetTitle() override { return Title.c_str(); }
+    void OnDeactivate() override;
 
 private:
     void LoadSettings();
-    void SaveSettings();
+    void SaveChanges();
 
     Settings currentSettings;
+    Settings originalSettings;
+    bool isDirty = false;
 };

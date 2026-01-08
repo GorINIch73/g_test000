@@ -6,7 +6,7 @@
 #include <algorithm>
 
 InvoicesView::InvoicesView()
-    : selectedInvoiceIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedInvoiceIndex(-1), showEditModal(false), isAdding(false), isDirty(false) {
     memset(filterText, 0, sizeof(filterText));
     memset(contractFilter, 0, sizeof(contractFilter));
 }
@@ -52,6 +52,42 @@ std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> Invoi
     return {headers, rows};
 }
 
+void InvoicesView::OnDeactivate() {
+    SaveChanges();
+}
+
+void InvoicesView::SaveChanges() {
+    if (!isDirty) {
+        return;
+    }
+
+    if (dbManager) {
+        if (isAdding) {
+            dbManager->addInvoice(selectedInvoice);
+            isAdding = false;
+        } else if (selectedInvoice.id != -1) {
+            dbManager->updateInvoice(selectedInvoice);
+        }
+
+        std::string current_number = selectedInvoice.number;
+        std::string current_date = selectedInvoice.date;
+        RefreshData();
+
+        auto it = std::find_if(invoices.begin(), invoices.end(), [&](const Invoice& i) {
+            return i.number == current_number && i.date == current_date;
+        });
+
+        if (it != invoices.end()) {
+            selectedInvoiceIndex = std::distance(invoices.begin(), it);
+            selectedInvoice = *it;
+        } else {
+            selectedInvoiceIndex = -1;
+        }
+    }
+
+    isDirty = false;
+}
+
 // Вспомогательная функция для сортировки
 static void SortInvoices(std::vector<Invoice>& invoices, const ImGuiTableSortSpecs* sort_specs) {
     std::sort(invoices.begin(), invoices.end(), [&](const Invoice& a, const Invoice& b) {
@@ -79,6 +115,9 @@ void InvoicesView::Render() {
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
+        if (!IsVisible) {
+            SaveChanges();
+        }
         ImGui::End();
         return;
     }
@@ -90,32 +129,26 @@ void InvoicesView::Render() {
 
     // Панель управления
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
+        SaveChanges();
         isAdding = true;
         selectedInvoiceIndex = -1;
         selectedInvoice = Invoice{-1, "", "", -1};
+        originalInvoice = selectedInvoice;
+        isDirty = false;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_TRASH " Удалить")) {
+        SaveChanges();
         if (!isAdding && selectedInvoiceIndex != -1 && dbManager) {
             dbManager->deleteInvoice(invoices[selectedInvoiceIndex].id);
             RefreshData();
             selectedInvoice = Invoice{};
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить")) {
-        if (dbManager) {
-            if (isAdding) {
-                dbManager->addInvoice(selectedInvoice);
-                isAdding = false;
-            } else if (selectedInvoice.id != -1) {
-                dbManager->updateInvoice(selectedInvoice);
-            }
-            RefreshData();
+            originalInvoice = Invoice{};
         }
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить")) {
+        SaveChanges();
         RefreshData();
         RefreshDropdownData();
     }
@@ -152,11 +185,16 @@ void InvoicesView::Render() {
             char label[256];
             sprintf(label, "%d##%d", invoices[i].id, i);
             if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                selectedInvoiceIndex = i;
-                selectedInvoice = invoices[i];
-                isAdding = false;
-                if(dbManager) {
-                    payment_info = dbManager->getPaymentInfoForInvoice(selectedInvoice.id);
+                if (selectedInvoiceIndex != i) {
+                    SaveChanges();
+                    selectedInvoiceIndex = i;
+                    selectedInvoice = invoices[i];
+                    originalInvoice = invoices[i];
+                    isAdding = false;
+                    isDirty = false;
+                    if(dbManager) {
+                        payment_info = dbManager->getPaymentInfoForInvoice(selectedInvoice.id);
+                    }
                 }
             }
             if (is_selected) {
@@ -206,9 +244,11 @@ void InvoicesView::Render() {
 
         if (ImGui::InputText("Номер", numberBuf, sizeof(numberBuf))) {
             selectedInvoice.number = numberBuf;
+            isDirty = true;
         }
         if (ImGui::InputText("Дата", dateBuf, sizeof(dateBuf))) {
             selectedInvoice.date = dateBuf;
+            isDirty = true;
         }
         
         if (!contractsForDropdown.empty()) {
@@ -216,7 +256,9 @@ void InvoicesView::Render() {
             for (const auto& c : contractsForDropdown) {
                 contractItems.push_back({c.id, c.number});
             }
-            CustomWidgets::ComboWithFilter("Контракт", selectedInvoice.contract_id, contractItems, contractFilter, sizeof(contractFilter), 0);
+            if (CustomWidgets::ComboWithFilter("Контракт", selectedInvoice.contract_id, contractItems, contractFilter, sizeof(contractFilter), 0)) {
+                isDirty = true;
+            }
         }
         ImGui::EndChild();
         ImGui::SameLine();

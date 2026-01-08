@@ -6,7 +6,7 @@
 #include <algorithm>
 
 ContractsView::ContractsView()
-    : selectedContractIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedContractIndex(-1), showEditModal(false), isAdding(false), isDirty(false) {
     memset(filterText, 0, sizeof(filterText));
     memset(counterpartyFilter, 0, sizeof(counterpartyFilter));
 }
@@ -53,6 +53,42 @@ std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> Contr
 }
 
 
+void ContractsView::OnDeactivate() {
+    SaveChanges();
+}
+
+void ContractsView::SaveChanges() {
+    if (!isDirty) {
+        return;
+    }
+
+    if (dbManager) {
+        if (isAdding) {
+            dbManager->addContract(selectedContract);
+            isAdding = false;
+        } else if (selectedContract.id != -1) {
+            dbManager->updateContract(selectedContract);
+        }
+
+        std::string current_number = selectedContract.number;
+        std::string current_date = selectedContract.date;
+        RefreshData();
+
+        auto it = std::find_if(contracts.begin(), contracts.end(), [&](const Contract& c) {
+            return c.number == current_number && c.date == current_date;
+        });
+
+        if (it != contracts.end()) {
+            selectedContractIndex = std::distance(contracts.begin(), it);
+            selectedContract = *it;
+        } else {
+            selectedContractIndex = -1;
+        }
+    }
+
+    isDirty = false;
+}
+
 // Вспомогательная функция для сортировки
 static void SortContracts(std::vector<Contract>& contracts, const ImGuiTableSortSpecs* sort_specs) {
     std::sort(contracts.begin(), contracts.end(), [&](const Contract& a, const Contract& b) {
@@ -80,6 +116,9 @@ void ContractsView::Render() {
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
+        if (!IsVisible) {
+            SaveChanges();
+        }
         ImGui::End();
         return;
     }
@@ -91,32 +130,26 @@ void ContractsView::Render() {
 
     // Панель управления
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
+        SaveChanges();
         isAdding = true;
         selectedContractIndex = -1;
         selectedContract = Contract{-1, "", "", -1};
+        originalContract = selectedContract;
+        isDirty = false;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_TRASH " Удалить")) {
+        SaveChanges();
         if (!isAdding && selectedContractIndex != -1 && dbManager) {
             dbManager->deleteContract(contracts[selectedContractIndex].id);
             RefreshData();
             selectedContract = Contract{};
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить")) {
-        if (dbManager) {
-            if (isAdding) {
-                dbManager->addContract(selectedContract);
-                isAdding = false;
-            } else if (selectedContract.id != -1) {
-                dbManager->updateContract(selectedContract);
-            }
-            RefreshData();
+            originalContract = Contract{};
         }
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить")) {
+        SaveChanges();
         RefreshData();
         RefreshDropdownData();
     }
@@ -153,11 +186,16 @@ void ContractsView::Render() {
             char label[256];
             sprintf(label, "%d##%d", contracts[i].id, i);
             if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                selectedContractIndex = i;
-                selectedContract = contracts[i];
-                isAdding = false;
-                if(dbManager) {
-                    payment_info = dbManager->getPaymentInfoForContract(selectedContract.id);
+                if (selectedContractIndex != i) {
+                    SaveChanges();
+                    selectedContractIndex = i;
+                    selectedContract = contracts[i];
+                    originalContract = contracts[i];
+                    isAdding = false;
+                    isDirty = false;
+                    if(dbManager) {
+                        payment_info = dbManager->getPaymentInfoForContract(selectedContract.id);
+                    }
                 }
             }
             if (is_selected) {
@@ -207,9 +245,11 @@ void ContractsView::Render() {
 
         if (ImGui::InputText("Номер", numberBuf, sizeof(numberBuf))) {
             selectedContract.number = numberBuf;
+            isDirty = true;
         }
         if (ImGui::InputText("Дата", dateBuf, sizeof(dateBuf))) {
             selectedContract.date = dateBuf;
+            isDirty = true;
         }
         
         if (!counterpartiesForDropdown.empty()) {
@@ -217,7 +257,9 @@ void ContractsView::Render() {
             for (const auto& cp : counterpartiesForDropdown) {
                 counterpartyItems.push_back({cp.id, cp.name});
             }
-            CustomWidgets::ComboWithFilter("Контрагент", selectedContract.counterparty_id, counterpartyItems, counterpartyFilter, sizeof(counterpartyFilter), 0);
+            if (CustomWidgets::ComboWithFilter("Контрагент", selectedContract.counterparty_id, counterpartyItems, counterpartyFilter, sizeof(counterpartyFilter), 0)) {
+                isDirty = true;
+            }
         }
         ImGui::EndChild(); 
         ImGui::SameLine();

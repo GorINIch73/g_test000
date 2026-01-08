@@ -5,7 +5,7 @@
 #include <algorithm>
 
 CounterpartiesView::CounterpartiesView()
-    : selectedCounterpartyIndex(-1), showEditModal(false), isAdding(false) {
+    : selectedCounterpartyIndex(-1), showEditModal(false), isAdding(false), isDirty(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 
@@ -37,6 +37,44 @@ std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> Count
     return {headers, rows};
 }
 
+void CounterpartiesView::OnDeactivate() {
+    SaveChanges();
+}
+
+void CounterpartiesView::SaveChanges() {
+    if (!isDirty) {
+        return;
+    }
+
+    if (dbManager) {
+        if (isAdding) {
+            dbManager->addCounterparty(selectedCounterparty);
+            isAdding = false;
+        } else if (selectedCounterparty.id != -1) {
+            dbManager->updateCounterparty(selectedCounterparty);
+        }
+        
+        // Find the name and inn of the currently selected counterparty before refreshing
+        std::string current_name = selectedCounterparty.name;
+        std::string current_inn = selectedCounterparty.inn;
+        RefreshData();
+
+        // Find the index of the counterparty that was just saved
+        auto it = std::find_if(counterparties.begin(), counterparties.end(), [&](const Counterparty& c) {
+            return c.name == current_name && c.inn == current_inn;
+        });
+
+        if (it != counterparties.end()) {
+            selectedCounterpartyIndex = std::distance(counterparties.begin(), it);
+            selectedCounterparty = *it;
+        } else {
+            selectedCounterpartyIndex = -1;
+        }
+    }
+
+    isDirty = false;
+}
+
 // Вспомогательная функция для сортировки
 static void SortCounterparties(std::vector<Counterparty>& counterparties, const ImGuiTableSortSpecs* sort_specs) {
     std::sort(counterparties.begin(), counterparties.end(), [&](const Counterparty& a, const Counterparty& b) {
@@ -64,6 +102,9 @@ void CounterpartiesView::Render() {
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
+        if (!IsVisible) {
+            SaveChanges();
+        }
         ImGui::End();
         return;
     }
@@ -74,32 +115,26 @@ void CounterpartiesView::Render() {
 
     // Панель управления
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
+        SaveChanges();
         isAdding = true;
         selectedCounterpartyIndex = -1; // Сброс выделения
         selectedCounterparty = Counterparty{-1, "", ""};
+        originalCounterparty = selectedCounterparty;
+        isDirty = false;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_TRASH " Удалить")) {
+        SaveChanges();
         if (!isAdding && selectedCounterpartyIndex != -1 && dbManager) {
             dbManager->deleteCounterparty(counterparties[selectedCounterpartyIndex].id);
             RefreshData();
             selectedCounterparty = Counterparty{};
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить")) {
-         if (dbManager) {
-            if (isAdding) {
-                dbManager->addCounterparty(selectedCounterparty);
-                isAdding = false;
-            } else if(selectedCounterparty.id != -1) {
-                dbManager->updateCounterparty(selectedCounterparty);
-            }
-            RefreshData();
+            originalCounterparty = Counterparty{};
         }
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить")) {
+        SaveChanges();
         RefreshData();
     }
 
@@ -134,11 +169,16 @@ void CounterpartiesView::Render() {
             char label[256];
             sprintf(label, "%d##%d", counterparties[i].id, i);
             if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                selectedCounterpartyIndex = i;
-                selectedCounterparty = counterparties[i];
-                isAdding = false;
-                if(dbManager) {
-                    payment_info = dbManager->getPaymentInfoForCounterparty(selectedCounterparty.id);
+                if(selectedCounterpartyIndex != i) {
+                    SaveChanges();
+                    selectedCounterpartyIndex = i;
+                    selectedCounterparty = counterparties[i];
+                    originalCounterparty = counterparties[i];
+                    isAdding = false;
+                    isDirty = false;
+                    if(dbManager) {
+                        payment_info = dbManager->getPaymentInfoForCounterparty(selectedCounterparty.id);
+                    }
                 }
             }
             if (is_selected) {
@@ -179,9 +219,11 @@ void CounterpartiesView::Render() {
 
         if (ImGui::InputText("Наименование", nameBuf, sizeof(nameBuf))) {
             selectedCounterparty.name = nameBuf;
+            isDirty = true;
         }
         if (ImGui::InputText("ИНН", innBuf, sizeof(innBuf))) {
             selectedCounterparty.inn = innBuf;
+            isDirty = true;
         }
         ImGui::EndChild();
         ImGui::SameLine();

@@ -18,9 +18,22 @@ UIManager::UIManager()
     : dbManager(nullptr), pdfReporter(nullptr), importManager(nullptr), window(nullptr), activeView(nullptr) {
     LoadRecentDbPaths();
     importMapView.SetUIManager(this);
+
+    allViews.push_back(&paymentsView);
+    allViews.push_back(&kosguView);
+    allViews.push_back(&counterpartiesView);
+    allViews.push_back(&contractsView);
+    allViews.push_back(&invoicesView);
+    allViews.push_back(&sqlQueryView);
+    allViews.push_back(&settingsView);
+    allViews.push_back(&importMapView);
+    allViews.push_back(&regexesView);
 }
 
 UIManager::~UIManager() {
+    for (auto& view : allViews) {
+        view->OnDeactivate();
+    }
     SaveRecentDbPaths();
 }
 
@@ -90,6 +103,9 @@ void UIManager::SetWindow(GLFWwindow* w) {
 }
 
 void UIManager::SetActiveView(BaseView* view) {
+    if (activeView != nullptr && activeView != view) {
+        activeView->OnDeactivate();
+    }
     activeView = view;
 }
 

@@ -12,13 +12,17 @@ public:
     void SetPdfReporter(PdfReporter* pdfReporter) override;
     std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> GetDataAsStrings() override;
     const char* GetTitle() override;
+    void OnDeactivate() override;
 
 private:
     void RefreshData();
+    void SaveChanges();
 
     std::vector<Regex> regexes;
     Regex selectedRegex;
+    Regex originalRegex;
     int selectedRegexIndex;
     bool isAdding;
+    bool isDirty = false;
     char filterText[256];
 };

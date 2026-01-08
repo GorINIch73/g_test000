@@ -20,22 +20,29 @@ public:
     void SetPdfReporter(PdfReporter* pdfReporter) override;
     std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> GetDataAsStrings() override;
     const char* GetTitle() override;
+    void OnDeactivate() override;
 
 private:
     void RefreshData();
     void RefreshDropdownData();
+    void SaveChanges();
+    void SaveDetailChanges();
 
     std::vector<Payment> payments;
     Payment selectedPayment;
+    Payment originalPayment;
     int selectedPaymentIndex;
     bool isAdding;
+    bool isDirty = false;
 
     std::string descriptionBuffer;
 
     std::vector<PaymentDetail> paymentDetails;
     PaymentDetail selectedDetail;
+    PaymentDetail originalDetail;
     int selectedDetailIndex;
     bool isAddingDetail;
+    bool isDetailDirty = false;
 
     std::vector<Counterparty> counterpartiesForDropdown;
     std::vector<Kosgu> kosguForDropdown;

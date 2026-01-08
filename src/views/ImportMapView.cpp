@@ -241,6 +241,57 @@ void ImportMapView::Render() {
 
             if (selected_index >= 0) {
                 ImGui::InputText("##pattern_edit", &edit_buffer);
+                ImGui::SameLine();
+
+                bool pattern_changed = edit_buffer != regexes[selected_index].pattern;
+
+                if (pattern_changed) {
+                    if (ImGui::Button("Сохранить")) {
+                        if (dbManager) {
+                            Regex updated_regex = regexes[selected_index];
+                            updated_regex.pattern = edit_buffer;
+                            if (dbManager->updateRegex(updated_regex)) {
+                                RefreshRegexes();
+                            }
+                        }
+                    }
+                    ImGui::SameLine();
+                }
+
+                std::string popup_id = std::string("SaveNewRegex##") + label;
+                if (ImGui::Button("Сохранить как новый")) {
+                    ImGui::OpenPopup(popup_id.c_str());
+                }
+
+                if (ImGui::BeginPopup(popup_id.c_str())) {
+                    static char newRegexName[128] = "";
+                    ImGui::InputText("Название", newRegexName, sizeof(newRegexName));
+                    if (ImGui::Button("OK")) {
+                        if (dbManager && strlen(newRegexName) > 0) {
+                            Regex new_regex;
+                            new_regex.name = newRegexName;
+                            new_regex.pattern = edit_buffer;
+                            if (dbManager->addRegex(new_regex)) {
+                                RefreshRegexes();
+                                // Reselect the newly added regex
+                                auto it = std::find_if(regexes.begin(), regexes.end(), [&](const Regex& r){ return r.name == newRegexName; });
+                                if(it != regexes.end()){
+                                    selected_index = std::distance(regexes.begin(), it);
+                                }
+                            }
+                        }
+                        strcpy(newRegexName, ""); // Clear buffer for next use
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Отмена")) {
+                        strcpy(newRegexName, ""); // Clear buffer for next use
+                        ImGui::CloseCurrentPopup();
+                    }
+                    ImGui::EndPopup();
+                }
+
+
                 match_result = get_regex_match(sample_description, edit_buffer);
                 ImGui::Text("Результат: %s", match_result.c_str());
             }

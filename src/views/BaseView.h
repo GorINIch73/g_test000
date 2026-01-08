@@ -15,6 +15,7 @@ public:
     virtual void SetPdfReporter(PdfReporter* pdfReporter) = 0;
     virtual std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> GetDataAsStrings() = 0;
     virtual const char* GetTitle() = 0;
+    virtual void OnDeactivate() {}
 
     bool IsVisible = false;
     std::string Title;

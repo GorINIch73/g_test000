@@ -6,7 +6,7 @@
 #include <cstring>
 
 RegexesView::RegexesView()
-    : selectedRegexIndex(-1), isAdding(false) {
+    : selectedRegexIndex(-1), isAdding(false), isDirty(false) {
     memset(filterText, 0, sizeof(filterText));
 }
 
@@ -39,12 +39,51 @@ std::pair<std::vector<std::string>, std::vector<std::vector<std::string>>> Regex
     return {headers, rows};
 }
 
+
+void RegexesView::OnDeactivate() {
+    SaveChanges();
+}
+
+void RegexesView::SaveChanges() {
+    if (!isDirty) {
+        return;
+    }
+
+    if (dbManager) {
+        if (isAdding) {
+            dbManager->addRegex(selectedRegex);
+            isAdding = false;
+        } else if (selectedRegex.id != -1) {
+            dbManager->updateRegex(selectedRegex);
+        }
+
+        std::string current_name = selectedRegex.name;
+        RefreshData();
+
+        auto it = std::find_if(regexes.begin(), regexes.end(), [&](const Regex& r) {
+            return r.name == current_name;
+        });
+
+        if (it != regexes.end()) {
+            selectedRegexIndex = std::distance(regexes.begin(), it);
+            selectedRegex = *it;
+        } else {
+            selectedRegexIndex = -1;
+        }
+    }
+
+    isDirty = false;
+}
+
 void RegexesView::Render() {
     if (!IsVisible) {
         return;
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
+        if (!IsVisible) {
+            SaveChanges();
+        }
         ImGui::End();
         return;
     }
@@ -55,32 +94,26 @@ void RegexesView::Render() {
 
     // --- Control Panel ---
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
+        SaveChanges();
         isAdding = true;
         selectedRegexIndex = -1;
         selectedRegex = Regex{-1, "", ""};
+        originalRegex = selectedRegex;
+        isDirty = true;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_TRASH " Удалить")) {
+        SaveChanges();
         if (!isAdding && selectedRegexIndex != -1 && dbManager) {
             dbManager->deleteRegex(regexes[selectedRegexIndex].id);
             RefreshData();
             selectedRegex = Regex{};
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить")) {
-        if (dbManager) {
-            if (isAdding) {
-                dbManager->addRegex(selectedRegex);
-                isAdding = false;
-            } else if (selectedRegex.id != -1) {
-                dbManager->updateRegex(selectedRegex);
-            }
-            RefreshData();
+            originalRegex = Regex{};
         }
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить")) {
+        SaveChanges();
         RefreshData();
     }
 
@@ -106,9 +139,14 @@ void RegexesView::Render() {
             char label[128];
             sprintf(label, "%d##%d", regexes[i].id, i);
             if (ImGui::Selectable(label, is_selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                selectedRegexIndex = i;
-                selectedRegex = regexes[i];
-                isAdding = false;
+                if (selectedRegexIndex != i) {
+                    SaveChanges();
+                    selectedRegexIndex = i;
+                    selectedRegex = regexes[i];
+                    originalRegex = regexes[i];
+                    isAdding = false;
+                    isDirty = false;
+                }
             }
              ImGui::TableNextColumn();
             ImGui::Text("%s", regexes[i].name.c_str());
@@ -128,8 +166,12 @@ void RegexesView::Render() {
             ImGui::Text("Редактирование выражения ID: %d", selectedRegex.id);
         }
         
-        ImGui::InputText("Имя", &selectedRegex.name);
-        ImGui::InputTextMultiline("Паттерн", &selectedRegex.pattern, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8));
+        if (ImGui::InputText("Имя", &selectedRegex.name)) {
+            isDirty = true;
+        }
+        if (ImGui::InputTextMultiline("Паттерн", &selectedRegex.pattern, ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8))) {
+            isDirty = true;
+        }
 
     } else {
         ImGui::Text("Выберите выражение для редактирования или добавьте новое.");

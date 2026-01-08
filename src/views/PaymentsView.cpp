@@ -14,8 +14,10 @@
 PaymentsView::PaymentsView()
     : selectedPaymentIndex(-1),
       isAdding(false),
+      isDirty(false),
       selectedDetailIndex(-1),
-      isAddingDetail(false) {
+      isAddingDetail(false),
+      isDetailDirty(false) {
     memset(filterText, 0, sizeof(filterText)); // Инициализация filterText
     memset(counterpartyFilter, 0, sizeof(counterpartyFilter));
     memset(kosguFilter, 0, sizeof(kosguFilter));
@@ -65,6 +67,70 @@ PaymentsView::GetDataAsStrings() {
     return {headers, rows};
 }
 
+void PaymentsView::OnDeactivate() {
+    SaveChanges();
+    SaveDetailChanges();
+}
+
+void PaymentsView::SaveChanges() {
+    if (!isDirty) return;
+
+    if (dbManager) {
+        selectedPayment.description = descriptionBuffer;
+        if (isAdding) {
+            dbManager->addPayment(selectedPayment);
+        } else if (selectedPayment.id != -1) {
+            dbManager->updatePayment(selectedPayment);
+        }
+        
+        std::string current_doc_number = selectedPayment.doc_number;
+        RefreshData();
+        auto it = std::find_if(payments.begin(), payments.end(), [&](const Payment& p){
+            return p.doc_number == current_doc_number;
+        });
+        if (it != payments.end()) {
+            selectedPaymentIndex = std::distance(payments.begin(), it);
+            selectedPayment = *it;
+            originalPayment = *it;
+            descriptionBuffer = selectedPayment.description;
+            if(dbManager) {
+                paymentDetails = dbManager->getPaymentDetails(selectedPayment.id);
+            }
+        }
+    }
+    isAdding = false;
+    isDirty = false;
+}
+
+void PaymentsView::SaveDetailChanges() {
+    if (!isDetailDirty) return;
+    
+    if (dbManager && selectedPayment.id != -1) {
+        if (isAddingDetail) {
+            dbManager->addPaymentDetail(selectedDetail);
+        } else if (selectedDetail.id != -1) {
+            dbManager->updatePaymentDetail(selectedDetail);
+        }
+
+        int old_detail_id = selectedDetail.id;
+        paymentDetails = dbManager->getPaymentDetails(selectedPayment.id);
+        
+        auto it = std::find_if(paymentDetails.begin(), paymentDetails.end(), [&](const PaymentDetail& d){
+            return d.id == old_detail_id;
+        });
+        if(it != paymentDetails.end()){
+            selectedDetailIndex = std::distance(paymentDetails.begin(), it);
+            selectedDetail = *it;
+            originalDetail = *it;
+        } else {
+            selectedDetailIndex = -1;
+        }
+    }
+    
+    isAddingDetail = false;
+    isDetailDirty = false;
+}
+
 // Вспомогательная функция для сортировки
 static void SortPayments(std::vector<Payment> &payments,
                          const ImGuiTableSortSpecs *sort_specs) {
@@ -109,6 +175,10 @@ void PaymentsView::Render() {
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
+        if (!IsVisible) {
+            SaveChanges();
+            SaveDetailChanges();
+        }
         ImGui::End();
         return;
     }
@@ -120,46 +190,43 @@ void PaymentsView::Render() {
 
     // --- Панель управления ---
     if (ImGui::Button(ICON_FA_PLUS " Добавить")) {
+        SaveChanges();
+        SaveDetailChanges();
+
         isAdding = true;
         selectedPaymentIndex = -1;
         selectedPayment = Payment{};
         selectedPayment.type = "expense";
-        descriptionBuffer.clear();
-
+        
         auto t = std::time(nullptr);
         auto tm = *std::localtime(&t);
         std::ostringstream oss;
         oss << std::put_time(&tm, "%Y-%m-%d");
         selectedPayment.date = oss.str();
+
+        originalPayment = selectedPayment;
+        descriptionBuffer.clear();
         paymentDetails.clear();
+        isDirty = true;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_TRASH " Удалить")) {
+        SaveChanges();
+        SaveDetailChanges();
         if (!isAdding && selectedPaymentIndex != -1 && dbManager) {
             dbManager->deletePayment(payments[selectedPaymentIndex].id);
             RefreshData();
             selectedPayment = Payment{};
+            originalPayment = Payment{};
             descriptionBuffer.clear();
             paymentDetails.clear();
-        }
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить")) {
-        if (dbManager) {
-            selectedPayment.description = descriptionBuffer;
-            if (isAdding) {
-                if (dbManager->addPayment(selectedPayment)) {
-                    isAdding = false;
-                    RefreshData();
-                }
-            } else if (selectedPaymentIndex != -1) {
-                dbManager->updatePayment(selectedPayment);
-                RefreshData();
-            }
+            isDirty = false;
         }
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить")) {
+        SaveChanges();
+        SaveDetailChanges();
         RefreshData();
         RefreshDropdownData();
     }
@@ -206,13 +273,23 @@ void PaymentsView::Render() {
             sprintf(label, "%s##%d", payments[i].date.c_str(), payments[i].id);
             if (ImGui::Selectable(label, is_selected,
                                   ImGuiSelectableFlags_SpanAllColumns)) {
-                selectedPaymentIndex = i;
-                selectedPayment = payments[i];
-                descriptionBuffer = selectedPayment.description;
-                paymentDetails =
-                    dbManager->getPaymentDetails(selectedPayment.id);
-                isAdding = false;
-                selectedDetailIndex = -1;
+                if (selectedPaymentIndex != i) {
+                    SaveChanges();
+                    SaveDetailChanges();
+
+                    selectedPaymentIndex = i;
+                    selectedPayment = payments[i];
+                    originalPayment = payments[i];
+                    descriptionBuffer = selectedPayment.description;
+                    if(dbManager) {
+                        paymentDetails =
+                            dbManager->getPaymentDetails(selectedPayment.id);
+                    }
+                    isAdding = false;
+                    isDirty = false;
+                    selectedDetailIndex = -1;
+                    isDetailDirty = false;
+                }
             }
             if (is_selected) {
                 ImGui::SetItemDefaultFocus();
@@ -253,6 +330,7 @@ void PaymentsView::Render() {
         snprintf(dateBuf, sizeof(dateBuf), "%s", selectedPayment.date.c_str());
         if (ImGui::InputText("Дата", dateBuf, sizeof(dateBuf))) {
             selectedPayment.date = dateBuf;
+            isDirty = true;
         }
 
         char docNumBuf[256];
@@ -260,6 +338,7 @@ void PaymentsView::Render() {
                  selectedPayment.doc_number.c_str());
         if (ImGui::InputText("Номер док.", docNumBuf, sizeof(docNumBuf))) {
             selectedPayment.doc_number = docNumBuf;
+            isDirty = true;
         }
 
         char typeBuf[32];
@@ -282,6 +361,7 @@ void PaymentsView::Render() {
                 if (ImGui::Selectable(paymentTypes[i], is_selected)) {
                     selectedPayment.type = paymentTypes[i];
                     currentTypeIndex = i;
+                    isDirty = true;
                 }
                 if (is_selected) {
                     ImGui::SetItemDefaultFocus();
@@ -291,6 +371,7 @@ void PaymentsView::Render() {
         }
 
         if (ImGui::InputDouble("Сумма", &selectedPayment.amount)) {
+            isDirty = true;
         }
 
         char recipientBuf[256];
@@ -299,18 +380,23 @@ void PaymentsView::Render() {
         if (ImGui::InputText("Получатель", recipientBuf,
                              sizeof(recipientBuf))) {
             selectedPayment.recipient = recipientBuf;
+            isDirty = true;
         }
 
-        CustomWidgets::InputTextMultilineWithWrap(
+        if (CustomWidgets::InputTextMultilineWithWrap(
             "Назначение", &descriptionBuffer,
-            ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8));
+            ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 8))) {
+            isDirty = true;
+        }
 
         if (!counterpartiesForDropdown.empty()) {
             std::vector<CustomWidgets::ComboItem> counterpartyItems;
             for (const auto& cp : counterpartiesForDropdown) {
                 counterpartyItems.push_back({cp.id, cp.name});
             }
-            CustomWidgets::ComboWithFilter("Контрагент", selectedPayment.counterparty_id, counterpartyItems, counterpartyFilter, sizeof(counterpartyFilter), 0);
+            if (CustomWidgets::ComboWithFilter("Контрагент", selectedPayment.counterparty_id, counterpartyItems, counterpartyFilter, sizeof(counterpartyFilter), 0)) {
+                isDirty = true;
+            }
         }
     } else {
         ImGui::Text("Выберите платеж для редактирования.");
@@ -333,39 +419,34 @@ void PaymentsView::Render() {
 
     if (selectedPaymentIndex != -1) {
         if (ImGui::Button(ICON_FA_PLUS " Добавить деталь")) {
+            SaveDetailChanges();
             isAddingDetail = true;
             selectedDetailIndex = -1;
             selectedDetail =
                 PaymentDetail{-1, selectedPayment.id, -1, -1, -1, 0.0};
+            originalDetail = selectedDetail;
+            isDetailDirty = true;
         }
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_TRASH " Удалить деталь") &&
             selectedDetailIndex != -1 && dbManager) {
+            SaveDetailChanges();
             dbManager->deletePaymentDetail(
                 paymentDetails[selectedDetailIndex].id);
             paymentDetails = dbManager->getPaymentDetails(
                 selectedPayment.id); // Refresh details
             selectedDetailIndex = -1;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(ICON_FA_FLOPPY_DISK " Сохранить деталь") &&
-            (isAddingDetail || selectedDetailIndex != -1) && dbManager) {
-            if (isAddingDetail) {
-                dbManager->addPaymentDetail(selectedDetail);
-                isAddingDetail = false;
-            } else {
-                dbManager->updatePaymentDetail(selectedDetail);
-            }
-            paymentDetails = dbManager->getPaymentDetails(
-                selectedPayment.id); // Refresh details
+            isDetailDirty = false;
         }
         ImGui::SameLine();
         if (ImGui::Button(ICON_FA_ROTATE_RIGHT " Обновить детали") &&
             dbManager) {
+            SaveDetailChanges();
             paymentDetails = dbManager->getPaymentDetails(
                 selectedPayment.id); // Refresh details
             selectedDetailIndex = -1;
             isAddingDetail = false;
+            isDetailDirty = false;
         }
 
         ImGui::BeginChild("PaymentDetailsList",
@@ -389,9 +470,14 @@ void PaymentsView::Render() {
                         paymentDetails[i].amount, paymentDetails[i].id);
                 if (ImGui::Selectable(detail_label, is_detail_selected,
                                       ImGuiSelectableFlags_SpanAllColumns)) {
-                    selectedDetailIndex = i;
-                    selectedDetail = paymentDetails[i];
-                    isAddingDetail = false;
+                    if (selectedDetailIndex != i) {
+                        SaveDetailChanges();
+                        selectedDetailIndex = i;
+                        selectedDetail = paymentDetails[i];
+                        originalDetail = paymentDetails[i];
+                        isAddingDetail = false;
+                        isDetailDirty = false;
+                    }
                 }
                 if (is_detail_selected) {
                     ImGui::SetItemDefaultFocus();
@@ -436,28 +522,36 @@ void PaymentsView::Render() {
             ImGui::Text(isAddingDetail ? "Добавить новую расшифровку"
                                        : "Редактировать расшифровку ID: %d",
                         selectedDetail.id);
-            ImGui::InputDouble("Сумма##detail", &selectedDetail.amount);
+            if(ImGui::InputDouble("Сумма##detail", &selectedDetail.amount)) {
+                isDetailDirty = true;
+            }
 
             // Dropdown for KOSGU
             std::vector<CustomWidgets::ComboItem> kosguItems;
             for (const auto& k : kosguForDropdown) {
                 kosguItems.push_back({k.id, k.code});
             }
-            CustomWidgets::ComboWithFilter("КОСГУ##detail", selectedDetail.kosgu_id, kosguItems, kosguFilter, sizeof(kosguFilter), 0);
+            if(CustomWidgets::ComboWithFilter("КОСГУ##detail", selectedDetail.kosgu_id, kosguItems, kosguFilter, sizeof(kosguFilter), 0)) {
+                isDetailDirty = true;
+            }
 
             // Dropdown for Contract
             std::vector<CustomWidgets::ComboItem> contractItems;
             for (const auto& c : contractsForDropdown) {
                 contractItems.push_back({c.id, c.number});
             }
-            CustomWidgets::ComboWithFilter("Договор##detail", selectedDetail.contract_id, contractItems, contractFilter, sizeof(contractFilter), 0);
+            if(CustomWidgets::ComboWithFilter("Договор##detail", selectedDetail.contract_id, contractItems, contractFilter, sizeof(contractFilter), 0)) {
+                isDetailDirty = true;
+            }
 
             // Dropdown for Invoice
             std::vector<CustomWidgets::ComboItem> invoiceItems;
             for (const auto& i : invoicesForDropdown) {
                 invoiceItems.push_back({i.id, i.number});
             }
-            CustomWidgets::ComboWithFilter("Накладная##detail", selectedDetail.invoice_id, invoiceItems, invoiceFilter, sizeof(invoiceFilter), 0);
+            if(CustomWidgets::ComboWithFilter("Накладная##detail", selectedDetail.invoice_id, invoiceItems, invoiceFilter, sizeof(invoiceFilter), 0)) {
+                isDetailDirty = true;
+            }
         }
     } else {
         ImGui::Text("Выберите платеж для просмотра расшифровок.");
