@@ -85,12 +85,6 @@ void RegexesView::Render() {
     }
 
     if (ImGui::Begin(GetTitle(), &IsVisible)) {
-        //     if (!IsVisible) {
-        //         SaveChanges();
-        //     }
-        //     ImGui::End();
-        //     return;
-        // }
 
         if (ImGui::IsWindowAppearing()) {
             RefreshData();

@@ -182,13 +182,6 @@ void PaymentsView::Render() {
     }
 
     if (ImGui::Begin(GetTitle(), &IsVisible)) {
-        //     if (!IsVisible) {
-        //         SaveChanges();
-        //         SaveDetailChanges();
-        //     }
-        //     ImGui::End();
-        //     return;
-        // }
 
         if (dbManager && payments.empty()) {
             RefreshData();

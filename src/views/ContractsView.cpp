@@ -137,12 +137,6 @@ void ContractsView::Render() {
     }
 
     if (ImGui::Begin(GetTitle(), &IsVisible)) {
-        //     if (!IsVisible) {
-        //         SaveChanges();
-        //     }
-        //     ImGui::End();
-        //     return;
-        // }
 
         if (dbManager && contracts.empty()) {
             RefreshData();

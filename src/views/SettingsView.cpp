@@ -42,14 +42,6 @@ void SettingsView::Render() {
     }
 
     if (ImGui::Begin(Title.c_str(), &IsVisible)) {
-        //     if (!IsVisible) {
-        //         if (isDirty) {
-        //             SaveChanges();
-        //         }
-        //     }
-        //     ImGui::End();
-        //     return;
-        // }
 
         // Load settings only once when the view becomes visible
         if (ImGui::IsWindowAppearing()) {

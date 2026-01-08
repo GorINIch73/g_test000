@@ -114,12 +114,6 @@ void KosguView::Render() {
     }
 
     if (ImGui::Begin(GetTitle(), &IsVisible)) {
-        //     if (!IsVisible) {
-        //         SaveChanges();
-        //     }
-        //     ImGui::End();
-        //     return;
-        // }
 
         if (dbManager && kosguEntries.empty()) {
             RefreshData();

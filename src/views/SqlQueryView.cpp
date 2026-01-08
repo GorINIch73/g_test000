@@ -28,9 +28,6 @@ void SqlQueryView::Render() {
     }
 
     if (!ImGui::Begin(GetTitle(), &IsVisible)) {
-        //     ImGui::End();
-        //     return;
-        // }
 
         ImGui::Text("Введите SQL запрос:");
         ImGui::InputTextMultiline(

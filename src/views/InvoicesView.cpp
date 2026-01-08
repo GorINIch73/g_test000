@@ -137,12 +137,6 @@ void InvoicesView::Render() {
     }
 
     if (ImGui::Begin(GetTitle(), &IsVisible)) {
-        //     if (!IsVisible) {
-        //         SaveChanges();
-        //     }
-        //     ImGui::End();
-        //     return;
-        // }
 
         if (dbManager && invoices.empty()) {
             RefreshData();
