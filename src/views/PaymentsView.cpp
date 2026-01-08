@@ -233,8 +233,7 @@ void PaymentsView::Render() {
 
         ImGui::Separator();
 
-        ImGui::InputText("Фильтр по назначению", filterText,
-                         sizeof(filterText));
+        ImGui::InputText("Общий фильтр", filterText, sizeof(filterText));
 
         // --- Список платежей ---
         ImGui::BeginChild("PaymentsList", ImVec2(0, list_view_height), true,
@@ -263,10 +262,33 @@ void PaymentsView::Render() {
             }
 
             for (int i = 0; i < payments.size(); ++i) {
-                if (filterText[0] != '\0' &&
-                    strcasestr(payments[i].description.c_str(), filterText) ==
-                        nullptr) {
-                    continue;
+                
+                if (filterText[0] != '\0') {
+                    bool match_found = false;
+
+                    if (strcasestr(payments[i].date.c_str(), filterText) != nullptr) {
+                        match_found = true;
+                    }
+                    if (!match_found && strcasestr(payments[i].doc_number.c_str(), filterText) != nullptr) {
+                        match_found = true;
+                    }
+                    if (!match_found && strcasestr(payments[i].description.c_str(), filterText) != nullptr) {
+                        match_found = true;
+                    }
+                    if (!match_found && strcasestr(payments[i].recipient.c_str(), filterText) != nullptr) {
+                        match_found = true;
+                    }
+                    if (!match_found) {
+                        char amount_str[32];
+                        snprintf(amount_str, sizeof(amount_str), "%.2f", payments[i].amount);
+                        if (strcasestr(amount_str, filterText) != nullptr) {
+                            match_found = true;
+                        }
+                    }
+
+                    if (!match_found) {
+                        continue;
+                    }
                 }
 
                 ImGui::TableNextRow();
