@@ -168,14 +168,14 @@ void UIManager::HandleFileDialogs() {
 
 
 void UIManager::Render() {
-    if(paymentsView.IsVisible) SetActiveView(&paymentsView);
-    if(kosguView.IsVisible) SetActiveView(&kosguView);
-    if(counterpartiesView.IsVisible) SetActiveView(&counterpartiesView);
-    if(contractsView.IsVisible) SetActiveView(&contractsView);
-    if(invoicesView.IsVisible) SetActiveView(&invoicesView);
-    if(sqlQueryView.IsVisible) SetActiveView(&sqlQueryView);
-    if(settingsView.IsVisible) SetActiveView(&settingsView);
-    if(regexesView.IsVisible) SetActiveView(&regexesView);
+    if(paymentsView.IsVisible) activeView = &paymentsView;
+    if(kosguView.IsVisible) activeView = &kosguView;
+    if(counterpartiesView.IsVisible) activeView = &counterpartiesView;
+    if(contractsView.IsVisible) activeView = &contractsView;
+    if(invoicesView.IsVisible) activeView = &invoicesView;
+    if(sqlQueryView.IsVisible) activeView = &sqlQueryView;
+    if(settingsView.IsVisible) activeView = &settingsView;
+    if(regexesView.IsVisible) activeView = &regexesView;
 
     paymentsView.Render();
     kosguView.Render();

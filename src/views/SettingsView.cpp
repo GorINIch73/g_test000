@@ -35,40 +35,48 @@ void SettingsView::OnDeactivate() {
 
 void SettingsView::Render() {
     if (!IsVisible) {
-        return;
-    }
-
-    if (!ImGui::Begin(Title.c_str(), &IsVisible)) {
-        if (!IsVisible) {
-            if (isDirty) {
-                SaveChanges();
-            }
+        if (isDirty) {
+            SaveChanges();
         }
-        ImGui::End();
         return;
     }
 
-    // Load settings only once when the view becomes visible
-    if (ImGui::IsWindowAppearing()) {
-        LoadSettings();
-    }
+    if (ImGui::Begin(Title.c_str(), &IsVisible)) {
+        //     if (!IsVisible) {
+        //         if (isDirty) {
+        //             SaveChanges();
+        //         }
+        //     }
+        //     ImGui::End();
+        //     return;
+        // }
 
-    if (CustomWidgets::InputText("Название организации", &currentSettings.organization_name)) {
-        isDirty = true;
+        // Load settings only once when the view becomes visible
+        if (ImGui::IsWindowAppearing()) {
+            LoadSettings();
+        }
+
+        if (CustomWidgets::InputText("Название организации",
+                                     &currentSettings.organization_name)) {
+            isDirty = true;
+        }
+        if (CustomWidgets::InputText("Дата начала периода",
+                                     &currentSettings.period_start_date)) {
+            isDirty = true;
+        }
+        if (CustomWidgets::InputText("Дата окончания периода",
+                                     &currentSettings.period_end_date)) {
+            isDirty = true;
+        }
+        if (CustomWidgets::InputTextMultilineWithWrap(
+                "Примечание", &currentSettings.note,
+                ImVec2(-1.0f, ImGui::GetTextLineHeight() * 4))) {
+            isDirty = true;
+        }
+        if (ImGui::InputInt("Строк предпросмотра",
+                            &currentSettings.import_preview_lines)) {
+            isDirty = true;
+        }
     }
-    if (CustomWidgets::InputText("Дата начала периода", &currentSettings.period_start_date)) {
-        isDirty = true;
-    }
-    if (CustomWidgets::InputText("Дата окончания периода", &currentSettings.period_end_date)) {
-        isDirty = true;
-    }
-    if (CustomWidgets::InputTextMultilineWithWrap("Примечание", &currentSettings.note, ImVec2(-1.0f, ImGui::GetTextLineHeight() * 4))) {
-        isDirty = true;
-    }
-    if (ImGui::InputInt("Строк предпросмотра", &currentSettings.import_preview_lines)) {
-        isDirty = true;
-    }
-    
     ImGui::End();
 }
-
